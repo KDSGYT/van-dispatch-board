@@ -15,7 +15,7 @@ streamlit run app.py
 
 The Streamlit app wraps the original single-file board so the dispatch UI still runs in the browser, but it can now be launched and hosted like a normal Streamlit project.
 
-Use the upload box above the board to attach your own job-book PDF or `.txt` export. The board opens a preview of the parsed jobs; click **Apply** to replace the built-in schedule in your browser.
+Use **↻ Job package** in the board header to attach your own job-book PDF or `.txt` export. The board opens a preview of the parsed jobs; click **Apply** to replace the built-in schedule in your browser.
 
 ### Original static HTML
 
