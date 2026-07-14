@@ -865,7 +865,19 @@ function buildFleet(n){const f={};for(let i=1;i<=n;i++)f[i]={status:"available",
 const SUPA_URL="";
 const SUPA_KEY="";
 const SUPA_HEAD={apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
-const local=(typeof window!=="undefined"&&window.storage)?window.storage:null;
+const local=(()=>{
+  if(typeof window==="undefined")return null;
+  if(window.storage)return window.storage;
+  if(window.localStorage){
+    const prefix="streamlit:";
+    return {
+      async get(key){const v=window.localStorage.getItem(prefix+key);return v==null?null:{value:v};},
+      async set(key,value){window.localStorage.setItem(prefix+key,value);return {value:value};},
+      async delete(key){window.localStorage.removeItem(prefix+key);return {deleted:true};}
+    };
+  }
+  return null;
+})();
 const supa={
   async get(key){const r=await fetch(SUPA_URL+"/rest/v1/dispatch_state?key=eq."+encodeURIComponent(key)+"&select=value",{headers:SUPA_HEAD});if(!r.ok)throw new Error("supa "+r.status);const rows=await r.json();return rows.length?{value:JSON.stringify(rows[0].value)}:null;},
   async set(key,value){const body=[{key:key,value:JSON.parse(value),updated_at:new Date().toISOString()}];const r=await fetch(SUPA_URL+"/rest/v1/dispatch_state?on_conflict=key",{method:"POST",headers:Object.assign({Prefer:"resolution=merge-duplicates"},SUPA_HEAD),body:JSON.stringify(body)});if(!r.ok)throw new Error("supa "+r.status);return {value:value};},

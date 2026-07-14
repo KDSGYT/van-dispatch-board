@@ -6,9 +6,18 @@ Schedule effective **July 5, 2026** (263 job variants, 201 van moves).
 
 ## Run it
 
-Open `index.html` in a browser. That's it.
+### Streamlit app
 
-To host on GitHub Pages: push this repo, then **Settings → Pages → Deploy from branch → main / root**. It'll be live at `https://<user>.github.io/<repo>/`.
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+The Streamlit app wraps the original single-file board so the dispatch UI still runs in the browser, but it can now be launched and hosted like a normal Streamlit project.
+
+### Original static HTML
+
+You can still open `index.html` directly in a browser. To host the static version on GitHub Pages: push this repo, then **Settings → Pages → Deploy from branch → main / root**. It'll be live at `https://<user>.github.io/<repo>/`.
 
 ## Tabs
 
