@@ -924,6 +924,16 @@ function delManual(id){state.manual[curDow]=manualFor(curDow).filter(m=>m.id!==i
 let pendingJobs=null;
 function openUpd(){pendingJobs=null;$("updFile").value="";$("updStatus").innerHTML="";$("updPreview").innerHTML="";$("updApply").disabled=true;$("updModalBg").classList.add("on");}
 function closeUpd(){$("updModalBg").classList.remove("on");}
+function fileFromStreamlitUpload(u){
+  const bin=atob(u.data),bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  return new File([bytes],u.name||"job-package.pdf",{type:u.type||"application/pdf"});
+}
+async function loadStreamlitUpload(){
+  const u=window.STREAMLIT_JOB_UPLOAD;if(!u||u._loaded)return;u._loaded=true;
+  openUpd();$("updStatus").textContent="Loading uploaded job package…";
+  await runImport(fileFromStreamlitUpload(u));
+}
 async function runImport(file){
   const st=$("updStatus");$("updApply").disabled=true;$("updPreview").innerHTML="";
   try{
@@ -1550,6 +1560,7 @@ function init(){
   $("locReset").onclick=()=>{const nd=locNeeds(curDow);state.staged[curDow]={};Object.keys(nd).forEach(L=>state.staged[curDow][L]=nd[L]);saveStaged();renderAll();flash("Reset to minimum (max reuse)");};
   $("applyCount").onclick=applyFleetCount;
   $("fleetCountInput").onkeydown=e=>{if(e.key==="Enter")applyFleetCount();};
+  if(window.STREAMLIT_JOB_UPLOAD)setTimeout(loadStreamlitUpload,0);
   $("mStatus").onclick=e=>{const b=e.target.closest("button");if(!b)return;$("mStatus").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");};
   $("mTires").onclick=e=>{const b=e.target.closest("button");if(!b)return;$("mTires").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");};
   $("mCancel").onclick=closeVan;$("modalBg").onclick=e=>{if(e.target===$("modalBg"))closeVan();};
