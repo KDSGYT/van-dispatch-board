@@ -93,9 +93,9 @@ select.van.assigned{border-color:var(--green)} select.van.bad{border-color:var(-
 .dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--green)}
 .van-card.repair .dot{background:var(--red)} .van-card.service .dot{background:var(--amber)}
 /* modal */
-.modal-bg{position:fixed;inset:0;background:rgba(8,10,15,.75);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal-bg{position:fixed;inset:0;background:rgba(8,10,15,.75);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:clamp(24px,8vh,90px) 16px 16px;overflow:auto}
 .modal-bg.on{display:flex}
-.modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;width:100%;max-width:400px;max-height:88vh;overflow:auto}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;width:100%;max-width:400px;max-height:calc(100vh - 48px);overflow:auto}
 .modal h3{font-size:22px;margin-bottom:14px}
 .logrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .hist{margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
