@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Van Dispatch Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#10131a; --panel:#181c26; --panel2:#1f2532; --line:#2b3242;
+  --ink:#e7ecf3; --dim:#8b95a7; --amber:#ffb627; --green:#34d399;
+  --red:#f87171; --blue:#60a5fa; --violet:#a78bfa;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --disp:'Barlow Condensed','Arial Narrow',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:14px}
+body{background:
+  radial-gradient(circle at 12% -10%,rgba(255,182,39,.06),transparent 40%),
+  radial-gradient(circle at 90% 0,rgba(96,165,250,.05),transparent 45%),var(--bg);
+  min-height:100vh}
+h1,h2,h3{font-family:var(--disp);letter-spacing:.04em;margin:0;font-weight:700}
+.wrap{max-width:1180px;margin:0 auto;padding:16px 18px 60px}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  border-bottom:2px solid var(--line);padding-bottom:12px;margin-bottom:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .led{width:11px;height:11px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 10px var(--green);animation:pulse 2.4s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.brand h1{font-size:30px;line-height:.95;text-transform:uppercase}
+.brand .sub{color:var(--amber);font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-family:var(--mono)}
+.daysel{display:flex;gap:4px;flex-wrap:wrap}
+.daysel button{font-family:var(--disp);font-size:16px;text-transform:uppercase;letter-spacing:.06em;
+  background:var(--panel);color:var(--dim);border:1px solid var(--line);padding:7px 13px;border-radius:6px;cursor:pointer;transition:.15s}
+.daysel button:hover{color:var(--ink);border-color:#3a4255}
+.daysel button.on{background:var(--amber);color:#10131a;border-color:var(--amber);font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin-bottom:16px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;border-left:3px solid var(--line)}
+.stat .n{font-family:var(--disp);font-size:30px;line-height:1;font-weight:700}
+.stat .l{color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:.13em;margin-top:5px}
+.stat.ok{border-left-color:var(--green)} .stat.warn{border-left-color:var(--amber)}
+.stat.bad{border-left-color:var(--red)} .stat.info{border-left-color:var(--blue)}
+nav.tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap}
+nav.tabs button{font-family:var(--disp);font-size:17px;letter-spacing:.05em;text-transform:uppercase;
+  background:transparent;color:var(--dim);border:0;border-bottom:3px solid transparent;padding:8px 14px;cursor:pointer}
+nav.tabs button.on{color:var(--amber);border-bottom-color:var(--amber)}
+nav.tabs button:hover{color:var(--ink)}
+.view{display:none} .view.on{display:block}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.btn{font-family:var(--disp);font-size:15px;letter-spacing:.05em;text-transform:uppercase;
+  background:var(--panel2);color:var(--ink);border:1px solid var(--line);padding:8px 14px;border-radius:6px;cursor:pointer;transition:.15s}
+.btn:hover{border-color:var(--amber);color:var(--amber)}
+.btn.primary{background:var(--amber);color:#10131a;border-color:var(--amber);font-weight:700}
+.btn.primary:hover{filter:brightness(1.08);color:#10131a}
+.btn.danger:hover{border-color:var(--red);color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-family:var(--disp);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);
+  text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg)}
+th.sortable{cursor:pointer;user-select:none} th.sortable:hover{color:var(--ink)}
+th.sortable.active{color:var(--amber)}
+th .ind{font-size:10px;margin-left:2px;opacity:.85}
+td{padding:6px 8px;border-bottom:1px solid #20262f;vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+.loc{font-weight:600;letter-spacing:.03em}
+.arrow{color:var(--dim);padding:0 4px}
+.tnum{color:var(--amber)}
+.vanno{font-family:var(--disp);font-size:17px;letter-spacing:.03em}
+.rowbad td{background:rgba(248,113,113,.06)}
+.van-card .base{font-size:10px;color:var(--blue);margin-top:3px;letter-spacing:.04em}
+.pill{display:inline-block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 7px;border-radius:20px;border:1px solid currentColor}
+.pill.ok{color:var(--green)} .pill.repo{color:var(--amber)} .pill.bad{color:var(--red)}
+.pill.idle{color:var(--dim)}
+select.van{font-family:var(--mono);background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+  border-radius:5px;padding:4px 6px;font-size:13px;min-width:70px}
+select.van.assigned{border-color:var(--green)} select.van.bad{border-color:var(--red)}
+.warntext{color:var(--amber);font-size:11px;margin-top:2px}
+.badtext{color:var(--red);font-size:11px;margin-top:2px}
+/* fleet grid */
+.fleet{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px}
+.van-card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px;cursor:pointer;
+  border-top:3px solid var(--green);transition:.12s;position:relative}
+.van-card:hover{transform:translateY(-2px);border-color:#3a4255}
+.van-card.repair{border-top-color:var(--red);opacity:.92}
+.van-card.service{border-top-color:var(--amber);opacity:.92}
+.van-card .vn{font-family:var(--disp);font-size:26px;font-weight:700;line-height:1}
+.van-card .vs{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin-top:3px}
+.van-card.repair .vs{color:var(--red)} .van-card.service .vs{color:var(--amber)}
+.van-card .due{font-size:10px;color:var(--dim);margin-top:5px}
+.van-card .due.soon{color:var(--amber)} .van-card .due.over{color:var(--red);font-weight:600}
+.dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--green)}
+.van-card.repair .dot{background:var(--red)} .van-card.service .dot{background:var(--amber)}
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(8,10,15,.75);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal-bg.on{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;width:100%;max-width:400px;max-height:88vh;overflow:auto}
+.modal h3{font-size:22px;margin-bottom:14px}
+.logrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hist{margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.hist-item{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid #20262f;font-size:12px}
+.hist-item .ht{font-family:var(--disp);font-size:11px;letter-spacing:.04em;padding:1px 8px;border-radius:20px;border:1px solid currentColor;white-space:nowrap}
+.ht.service{color:var(--amber)} .ht.repair{color:var(--red)} .ht.inspection{color:var(--blue)} .ht.back{color:var(--green)} .ht.other{color:var(--dim)}
+.hist-item .hbody{flex:1}
+.hist-item .hd{color:var(--dim)}
+.hist-item .hx{color:var(--dim);cursor:pointer;border:0;background:none;font-size:15px;line-height:1;padding:0 2px}
+.hist-item .hx:hover{color:var(--red)}
+.hist-empty{color:var(--dim);font-size:12px;padding:6px 0}
+.pos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.pos-card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:11px}
+.pos-card .lc{font-family:var(--disp);font-size:19px;letter-spacing:.03em}
+.pos-card .seclbl{font-size:10px;text-transform:uppercase;letter-spacing:.11em;color:var(--dim);margin:9px 0 4px}
+.vchip{display:inline-block;font-family:var(--mono);font-size:13px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:3px 9px;margin:2px 4px 0 0;cursor:pointer;transition:.12s}
+.vchip:hover{border-color:var(--amber);color:var(--amber)}
+.arr{font-size:11.5px;color:var(--dim);margin-top:7px;line-height:1.7}
+.arr .van{color:var(--amber);font-family:var(--disp);font-size:13px}
+.arr .at{color:var(--ink)}
+.posnone{font-size:12px;color:var(--dim);margin-top:7px;font-style:italic}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin-bottom:4px}
+.field input,.field select{width:100%;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;font-family:var(--mono);font-size:14px}
+.seg{display:flex;gap:5px}
+.seg button{flex:1;font-family:var(--disp);font-size:14px;text-transform:uppercase;background:var(--panel2);color:var(--dim);border:1px solid var(--line);padding:8px;border-radius:6px;cursor:pointer}
+.seg button.on{color:#10131a;font-weight:700}
+.seg button.ava.on{background:var(--green);border-color:var(--green)}
+.seg button.ser.on{background:var(--amber);border-color:var(--amber)}
+.seg button.rep.on{background:var(--red);border-color:var(--red)}
+.seg button.win.on{background:var(--blue);border-color:var(--blue)}
+.seg button.sum.on{background:#8a8f99;border-color:#8a8f99}
+.van-card{position:relative}
+.tflag{font-size:.6em;color:var(--blue);vertical-align:middle}
+.sflag{font-size:.62em;vertical-align:middle}
+.sflag.over{color:var(--red)}
+.sflag.soon{color:var(--amber)}
+.rflag{font-size:.58em;vertical-align:middle}
+.fleet-legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:12px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:9px}
+.fleet-legend .lg{font-size:12px;color:var(--dim);display:inline-flex;align-items:center;gap:5px}
+.fleet-legend .tflag,.fleet-legend .sflag,.fleet-legend .rflag{font-size:14px}
+.muted{color:var(--dim)} .small{font-size:12px}
+.note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:8px;padding:12px 14px;margin-bottom:14px;color:var(--dim);font-size:12.5px;line-height:1.5}
+.section-title{font-family:var(--disp);font-size:20px;text-transform:uppercase;letter-spacing:.05em;margin:18px 0 8px;color:var(--amber)}
+.dispatch-out{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:14px;margin-top:12px;font-size:13px;line-height:1.6;min-height:54px}
+.go{color:var(--green);font-weight:600} .nogo{color:var(--red);font-weight:600} .cond{color:var(--amber);font-weight:600}
+.loc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.loc-card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:11px;border-left:3px solid var(--line)}
+.loc-card.dry{border-left-color:var(--red)} .loc-card.tight{border-left-color:var(--amber)}
+.loc-card .lc{font-family:var(--disp);font-size:20px;letter-spacing:.04em}
+.loc-card .lr{font-size:11px;color:var(--dim);margin-top:3px}
+.loc-card .lr b{color:var(--ink)}
+.stepper{display:flex;align-items:center;gap:6px;margin-top:8px}
+.stepper button{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);
+  color:var(--ink);font-size:17px;line-height:1;cursor:pointer;font-family:var(--mono)}
+.stepper button:hover{border-color:var(--amber);color:var(--amber)}
+.stepper .sv{font-family:var(--disp);font-size:22px;min-width:30px;text-align:center}
+.stepper .sl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em}
+.atnow{margin-top:8px;font-size:13px;color:var(--dim);border-top:1px dashed var(--line);padding-top:7px}
+.atnow .cnt{font-family:var(--disp);font-size:22px}
+.cnt.pos{color:var(--green)} .cnt.zero{color:var(--amber)} .cnt.neg{color:var(--red)}
+input[type=range]{flex:1;min-width:160px;accent-color:var(--amber)}
+.locbanner{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.5}
+.locbanner.short{border-left-color:var(--red)}
+.locbanner .big{font-family:var(--disp);font-size:22px;color:var(--amber)}
+.planbox{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--green);border-radius:8px;padding:12px 14px;margin-bottom:12px}
+.planhead{font-family:var(--disp);font-size:17px;letter-spacing:.05em;color:var(--amber);text-transform:uppercase;margin-bottom:8px}
+.plangrid{display:flex;flex-wrap:wrap;gap:6px}
+.planitem{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:13px}
+.planitem b{font-family:var(--disp);font-size:17px;color:var(--green);margin-right:4px}
+.plantot{margin-top:8px;font-size:12.5px;color:var(--dim);line-height:1.5}
+.tag{display:inline-block;font-size:10px;color:var(--dim);border:1px solid var(--line);padding:1px 6px;border-radius:4px;margin-left:6px}
+.daystrip{font-size:11px;color:var(--dim);margin-left:6px}
+.flash{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--green);color:#10131a;
+  font-family:var(--disp);font-size:15px;letter-spacing:.05em;text-transform:uppercase;padding:9px 18px;border-radius:8px;
+  opacity:0;transition:.3s;pointer-events:none;z-index:90}
+.flash.on{opacity:1}
+.headright{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+.nowbar{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.nowclock{font-family:var(--disp);font-size:44px;letter-spacing:.04em;line-height:1;color:var(--ink)}
+.nowclock .nowday{font-size:16px;color:var(--dim);margin-left:10px;text-transform:uppercase;letter-spacing:.12em}
+.nowstat{font-size:13px;color:var(--dim);text-align:right}
+.nowstat b{color:var(--ink);font-family:var(--disp);font-size:16px}
+.nowlist{display:flex;flex-direction:column;gap:6px}
+.nowdep{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:14px}
+.nowdep.soon{border-color:var(--amber)}
+.nowdep .t{font-family:var(--disp);font-size:19px;min-width:64px}
+.nowdep .vn2{font-family:var(--mono);font-size:13px;color:var(--green)}
+.nowdep .vn2.need{color:var(--red)}
+.nowdep .rt{margin-left:auto;font-size:12px;color:var(--amber);white-space:nowrap}
+.nowdep.disp{background:rgba(214,158,46,.07)}
+.countbox{background:rgba(214,158,46,.10);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;margin-bottom:14px}
+.countbox .rethdr{color:var(--amber)}
+.countline{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;padding:4px 0}
+.countdown{font-family:var(--disp);font-size:17px;color:var(--amber);white-space:nowrap}
+.countdown.over{color:var(--red)}
+.transitlist{display:flex;flex-direction:column;gap:9px}
+.transit-row{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+.transit-row.disp{background:rgba(214,158,46,.07)}
+.tr-head{display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:9px}
+.tr-route{color:var(--dim)}
+.tr-eta{margin-left:auto;font-size:12px;color:var(--amber);white-space:nowrap}
+.tr-track{display:flex;align-items:center;gap:8px}
+.tr-time{font-family:var(--mono);font-size:11px;color:var(--dim);min-width:40px}
+.tr-time.e{text-align:right}
+.tr-line{position:relative;flex:1;height:3px;background:var(--line);border-radius:2px}
+.tr-line::before,.tr-line::after{content:"";position:absolute;top:50%;width:7px;height:7px;border-radius:50%;transform:translateY(-50%)}
+.tr-line::before{left:-2px;background:var(--dim)}
+.tr-line::after{right:-2px;background:var(--green)}
+.tr-prog{position:absolute;left:0;top:0;height:100%;background:var(--blue);border-radius:2px}
+.tr-van{position:absolute;top:50%;transform:translate(-50%,-50%) scaleX(-1);font-size:17px;line-height:1;filter:drop-shadow(0 0 3px rgba(0,0,0,.5))}
+.vedit{cursor:pointer}
+.vedit:hover{color:var(--amber)}
+.jobno{font-family:var(--mono);font-size:11px;color:var(--dim);white-space:nowrap}
+.nowdep .jobno{margin-left:2px}
+.alertbox{border-radius:10px;padding:11px 13px;margin-bottom:12px;border:1px solid}
+.alertbox.red{background:rgba(229,62,62,.12);border-color:var(--red)}
+.alertbox.amber{background:rgba(214,158,46,.10);border-color:var(--amber)}
+.alertbox.grey{background:var(--panel);border-color:var(--line)}
+.albl{font-family:var(--disp);font-size:16px;letter-spacing:.04em;margin-bottom:7px}
+.alertbox.red .albl{color:var(--red)}
+.alertbox.amber .albl{color:var(--amber)}
+.alertbox.grey .albl{color:var(--dim)}
+.alline{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:13px;padding:5px 0;border-top:1px solid rgba(255,255,255,.05)}
+.alline:first-of-type{border-top:none}
+.alwhen{font-family:var(--disp);font-size:15px;white-space:nowrap;color:var(--amber)}
+.alwhen.over{color:var(--red)}
+.alertbox.red .alwhen{color:var(--red)}
+.allclear{display:flex;align-items:center;gap:14px;background:rgba(72,187,120,.10);border:1px solid var(--green);border-radius:10px;padding:16px 18px;margin-bottom:12px}
+.allclear .ac-ic{font-size:28px;color:var(--green);font-family:var(--disp);line-height:1}
+.exform{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 13px;margin-bottom:12px}
+.exhdr{font-size:12px;color:var(--dim);margin-bottom:10px}
+.exrow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}
+.exrow label{display:flex;flex-direction:column;gap:3px;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.exrow input,.exrow select{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:7px 9px;font-family:inherit;font-size:14px}
+.exrow input[type=time]{min-width:118px}
+.btn.go{background:var(--green);border-color:var(--green);color:#04210f;font-weight:600}
+.exerr{color:var(--red);font-size:12px;min-height:14px}
+.addedtag{display:inline-block;margin-left:6px;font-size:9px;background:var(--blue);color:#021;padding:1px 5px;border-radius:4px;vertical-align:middle;font-family:var(--mono);letter-spacing:.05em}
+.xbtn{background:transparent;border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:1px 7px;cursor:pointer;font-size:13px;margin-left:7px;line-height:1.4}
+.xbtn:hover{border-color:var(--red);color:var(--red)}
+.pill.standing{background:rgba(99,179,237,.18);color:var(--blue)}
+.typebadge{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:2px 8px;border-radius:5px}
+#numToggle.off{opacity:.6}
+.movelist{display:flex;flex-direction:column;gap:6px}
+.moveitem{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13px}
+.retflag{color:var(--amber);font-size:12px}
+.okflag{color:var(--green);font-size:12px}
+.xbtn{padding:4px 10px;font-size:15px;min-width:34px}
+.retbox{background:rgba(214,158,46,.10);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;margin-bottom:14px}
+.rethdr{font-family:var(--disp);font-size:16px;color:var(--amber);letter-spacing:.04em;margin-bottom:6px}
+.retline{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;padding:3px 0}
+.pill.disp{background:var(--amber);color:#10131a}
+.rowman td{background:rgba(214,158,46,.06)}
+#updFile{display:block;width:100%;font-family:var(--mono);font-size:13px;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;cursor:pointer}
+.updstatus{font-size:13px;margin-top:10px;min-height:18px}
+.updpreview{margin-top:8px}
+.updrow{font-family:var(--disp);font-size:17px;margin-top:4px}
+.updcodes{font-family:var(--mono);font-size:12px;color:var(--dim);line-height:1.7;max-height:160px;overflow:auto;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:4px}
+@media(max-width:620px){.brand h1{font-size:23px}.stat .n{font-size:24px}}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="brand">
+    <div class="led"></div>
+    <div>
+      <h1>Van Dispatch Board</h1>
+      <div class="sub">Crew Transport &middot; Schedule eff. Jul 5, 2026</div>
+    </div>
+  </div>
+  <div class="headright">
+    <button class="btn" id="updBtn" title="Load a new job package">&#8635; Job package</button>
+    <button class="btn" id="numToggle" title="Show or hide van numbers">Van #: on</button>
+    <div class="daysel" id="daysel"></div>
+  </div>
+</header>
+
+<div class="stats" id="stats"></div>
+
+<nav class="tabs" id="tabs">
+  <button data-v="home" class="on">&#8962; Home</button>
+  <button data-v="pos">Positions</button>
+  <button data-v="sched">Daily Schedule</button>
+  <button data-v="fleet">Fleet</button>
+  <button data-v="dispatch">Spare Van Request</button>
+  <button data-v="maint">Maintenance</button>
+  <button data-v="locs">Locations</button>
+</nav>
+
+<!-- SCHEDULE -->
+<section class="view" id="v-sched">
+  <div class="bar">
+    <label class="small muted" style="display:flex;align-items:center;gap:6px">Show
+      <select id="vanFilter" class="van" style="min-width:120px"></select>
+    </label>
+    <span class="muted small" id="schedHint"></span>
+    <button class="btn" id="exToggle" style="margin-left:auto">+ Add extra job</button>
+  </div>
+  <div id="exForm" class="exform" style="display:none">
+    <div class="exhdr">Extra job for <b id="exDay"></b>. A routed job gets a van assigned automatically; Hotel and DOB van jobs are logged without a route.</div>
+    <div class="exrow">
+      <label>Type<select id="exType"><option value="route">Route (From &rarr; To)</option><option value="hotel">Hotel</option><option value="dob">DOB Van</option><option value="shuttle">Shuttle Van</option></select></label>
+      <label>Job #<input id="exJob" type="text" placeholder="e.g. 9001"></label>
+    </div>
+    <div class="exrow" id="exLocRow">
+      <label>From<select id="exFrom"></select></label>
+      <label>To<select id="exTo"></select></label>
+    </div>
+    <div class="exrow">
+      <label>Start<input id="exStart" type="time"></label>
+      <label>End<input id="exEnd" type="time"></label>
+      <button class="btn go" id="exAdd">Add job</button>
+      <button class="btn" id="exCancel">Cancel</button>
+    </div>
+    <div id="exErr" class="exerr"></div>
+  </div>
+  <div class="note">
+    Vans are assigned automatically by following each van&rsquo;s actual position &mdash; a van only ever departs from where it currently sits, then carries to its drop point.
+    Tap any column heading to sort (tap again to reverse) &mdash; sort by <b>Van</b> to group every move a van makes that day, or use <b>Show</b> to isolate one van or just the spots where a van is needed.
+    <span class="pill ok">OK</span> a van is there &middot;
+    <span class="pill bad">VAN NEEDED</span> no van at the pickup point &mdash; get one there.
+  </div>
+  <table id="schedTbl"><thead><tr>
+    <th class="sortable" data-sort="start">Start</th>
+    <th class="sortable" data-sort="job">Job</th>
+    <th class="sortable" data-sort="route">Route</th>
+    <th class="sortable" data-sort="end">End</th>
+    <th class="sortable" data-sort="van">Van</th>
+    <th class="sortable" data-sort="status">Status</th>
+  </tr></thead><tbody id="schedBody"></tbody></table>
+  <div id="schedEmpty" class="muted" style="padding:30px;text-align:center;display:none">No van moves scheduled for this day.</div>
+</section>
+
+<!-- FLEET -->
+<section class="view" id="v-fleet">
+  <div class="bar">
+    <label class="small muted" style="display:flex;align-items:center;gap:8px">How many vans do you have?
+      <input id="fleetCountInput" type="number" min="1" max="300" style="width:80px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px;font-family:var(--mono)">
+    </label>
+    <button class="btn primary" id="applyCount">Update fleet</button>
+    <span class="muted small">Tap a van to set status &amp; maintenance &mdash; out-of-service vans drop out and the schedule re-adjusts.</span>
+  </div>
+  <div class="fleet-legend">
+    <span class="lg"><span class="tflag">&#10052;</span> Winter tires on</span>
+    <span class="lg"><span class="sflag soon">&#9881;</span> Service due soon</span>
+    <span class="lg"><span class="sflag over">&#9881;</span> Service overdue</span>
+    <span class="lg"><span class="rflag">&#128295;</span> In for repairs</span>
+  </div>
+  <div class="fleet" id="fleetGrid"></div>
+</section>
+
+<!-- DISPATCH -->
+<section class="view" id="v-dispatch">
+  <div id="retPanel"></div>
+  <div class="section-title" style="margin-top:0">Find a spare van to take</div>
+  <div class="note">Enter where you&rsquo;re starting, where you&rsquo;re taking the crew, and the times. The board finds a van you can spare from the start point, tells you its number, and says whether it can stay at the destination or must be back by a certain time so the start point doesn&rsquo;t run short. Accept the move to put it on the schedule.</div>
+  <div class="bar">
+    <div class="field" style="margin:0"><label>From</label><select id="spFrom"></select></div>
+    <div class="field" style="margin:0"><label>To</label><select id="spTo"></select></div>
+    <div class="field" style="margin:0"><label>Pickup</label><input id="spTime" type="time" value="10:00"></div>
+    <div class="field" style="margin:0"><label>Drop</label><input id="spDrop" type="time" value="10:30"></div>
+    <button class="btn primary" id="spBtn" style="align-self:flex-end">Find van</button>
+  </div>
+  <div class="dispatch-out muted" id="spOut">Pick a start, destination, and times.</div>
+
+  <div class="section-title">Accepted dispatch moves today</div>
+  <div id="moveList" class="movelist"></div>
+
+  <div class="section-title">Vans available right now at a location</div>
+  <div class="bar">
+    <div class="field" style="margin:0"><label>Location</label><select id="poolLoc"></select></div>
+    <div class="field" style="margin:0"><label>At time</label><input id="poolTime" type="time" value="10:00"></div>
+    <button class="btn" id="poolBtn" style="align-self:flex-end">Show vans</button>
+  </div>
+  <div class="dispatch-out muted" id="poolOut">Pick a location and time.</div>
+</section>
+
+<!-- MAINTENANCE -->
+<section class="view" id="v-maint">
+  <div class="note">Vans are flagged when their next service date is within 14 days (<span style="color:var(--amber)">due soon</span>) or past (<span style="color:var(--red)">overdue</span>). Click any row to edit.</div>
+  <table><thead><tr><th>Van</th><th>Status</th><th>Last service</th><th>Next due</th><th>Odometer</th><th>History</th><th>Notes</th></tr></thead>
+  <tbody id="maintBody"></tbody></table>
+</section>
+
+<!-- LOCATIONS -->
+<section class="view" id="v-locs">
+  <div class="locbanner" id="locBanner"></div>
+  <div class="planbox" id="locPlan"></div>
+  <div class="bar">
+    <span class="muted small">Time of day</span>
+    <input type="range" id="locTime" min="0" max="1440" step="5">
+    <b id="locTimeOut" class="tnum" style="font-family:var(--disp);font-size:20px">--:--</b>
+    <button class="btn" id="locReset">Stage exact amounts</button>
+    <span class="muted small" id="locTransit"></span>
+  </div>
+  <div class="note" style="margin-bottom:10px">
+    <b>Need</b> is the exact number of vans to park at a location so every crew there is covered &mdash; <b>0</b> means none is needed (crews are covered by vans arriving during the day).
+    Tap <b>&minus;/&#43;</b> to add or remove vans at a spot. <b>At [time]</b> shows how many are sitting there;
+    <span class="cnt neg" style="font-size:13px">red</span> means a crew needs one and none is there.
+  </div>
+  <div class="loc-grid" id="locGrid"></div>
+</section>
+
+<section class="view on" id="v-home">
+  <div class="nowbar">
+    <div class="nowclock"><span id="homeClock">--:--</span><span class="nowday" id="homeDay"></span></div>
+    <div class="nowstat" id="homeStat"></div>
+  </div>
+  <div id="homeAlerts"></div>
+</section>
+
+<section class="view" id="v-pos">
+  <div class="nowbar">
+    <div class="nowclock"><span id="posTimeOut">--:--</span><span class="nowday" id="posDay"></span></div>
+    <div class="nowstat" id="posStat"></div>
+  </div>
+  <div class="bar">
+    <span class="muted small">Time</span>
+    <input type="range" id="posTime" min="0" max="1440" step="5">
+    <button class="btn" id="posNow">Now</button>
+  </div>
+  <div id="posReturns"></div>
+  <div class="section-title" style="margin-top:0">Departing in the next hour</div>
+  <div id="posDepart" class="nowlist"></div>
+  <div class="section-title">On the road now</div>
+  <div id="posTransitList" class="transitlist"></div>
+  <div class="section-title">Vans by location <span class="muted small" style="text-transform:none;letter-spacing:0">&mdash; tap a number to correct it</span></div>
+  <div class="pos-grid" id="posGrid"></div>
+</section>
+
+</div>
+
+<!-- JOB PACKAGE IMPORT MODAL -->
+<div class="modal-bg" id="updModalBg">
+  <div class="modal" style="max-width:560px">
+    <h3>Load a new job package</h3>
+    <div class="muted small" style="margin-bottom:10px">
+      Attach the job-book <b>PDF</b> (or a .txt export of it). It&rsquo;s read on your device, parsed the same way as the current data &mdash; two-section merge, single &amp; multi-van trips, day patterns &mdash; and your location renames (WB&rarr;WILLOWBROOK, RL&rarr;RICHMOND HILL, and the rest) are applied automatically.
+    </div>
+    <input id="updFile" type="file" accept=".pdf,.txt" />
+    <div id="updStatus" class="updstatus"></div>
+    <div id="updPreview" class="updpreview"></div>
+    <div class="bar" style="margin:14px 0 0;justify-content:space-between">
+      <button class="btn" id="updReset">Restore built-in</button>
+      <span>
+        <button class="btn" id="updCancel">Cancel</button>
+        <button class="btn primary" id="updApply" disabled>Apply</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- VAN NUMBER EDIT MODAL -->
+<div class="modal-bg" id="vmodalBg">
+  <div class="modal" style="max-width:340px">
+    <h3 id="vmTitle">Change van number</h3>
+    <div class="muted small" id="vmWhere" style="margin-bottom:10px"></div>
+    <div class="field"><label>Van number actually here</label>
+      <input id="vmNum" type="number" min="1" placeholder="e.g. 12"></div>
+    <div class="muted small">This swaps the two vans&rsquo; numbers for the selected day, keeping every number unique.</div>
+    <div class="bar" style="margin:14px 0 0;justify-content:flex-end">
+      <button class="btn" id="vmCancel">Cancel</button>
+      <button class="btn primary" id="vmSave">Save</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- VAN MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="mTitle">Van</h3>
+    <div class="field"><label>Status</label>
+      <div class="seg" id="mStatus">
+        <button class="ava" data-s="available">Available</button>
+        <button class="ser" data-s="service">Service</button>
+        <button class="rep" data-s="repair">Repair</button>
+      </div>
+    </div>
+    <div class="field"><label>Winter tires</label>
+      <div class="seg" id="mTires">
+        <button class="win" data-t="on">&#10052; On</button>
+        <button class="sum" data-t="off">Off</button>
+      </div>
+    </div>
+    <div class="field"><label>Last service date</label><input id="mLast" type="date"></div>
+    <div class="field"><label>Next service due</label><input id="mNext" type="date"></div>
+    <div class="field"><label>Odometer (km)</label><input id="mOdo" type="number" min="0" placeholder="e.g. 84200"></div>
+    <div class="field"><label>Notes (current)</label><input id="mNotes" type="text" placeholder="e.g. in shop bay 3"></div>
+    <div class="section-title" style="font-size:16px;margin:14px 0 8px">Maintenance history</div>
+    <div class="logrow">
+      <div class="field"><label>Type</label><select id="logType">
+        <option value="service">Service</option><option value="repair">Repair</option>
+        <option value="inspection">Inspection</option><option value="back">Returned to service</option>
+        <option value="other">Other</option></select></div>
+      <div class="field"><label>Date</label><input id="logDate" type="date"></div>
+    </div>
+    <div class="field"><label>Details</label><input id="logDetails" type="text" placeholder="what was done / reported"></div>
+    <div class="logrow">
+      <div class="field"><label>Odometer (km)</label><input id="logOdo" type="number" min="0"></div>
+      <div class="field" style="display:flex;align-items:flex-end"><button class="btn primary" id="logAdd" style="width:100%">Add record</button></div>
+    </div>
+    <div class="hist" id="histList"></div>
+    <div class="bar" style="margin:14px 0 0;justify-content:flex-end">
+      <button class="btn" id="mCancel">Close</button>
+      <button class="btn primary" id="mSave">Save status</button>
+    </div>
+  </div>
+</div>
+
+<div class="flash" id="flash"></div>
+<script>
+"use strict";
+const BUILTIN_JOBS = [
+  {"job":"10001","onduty":"WR","days":"Mon-Fri","start":"03:57","end":"13:22","moves":[{"id":"m0","from":"OSHAWA","to":"WRMF","start":"12:52","end":"13:07","sm":772,"em":787}]},
+  {"job":"10003","onduty":"WR","days":"Mon-Fri","start":"05:18","end":"12:52","moves":[{"id":"m1","from":"OSHAWA","to":"WRMF","start":"12:22","end":"12:37","sm":742,"em":757}]},
+  {"job":"10004","onduty":"WR","days":"Mon-Fri","start":"05:26","end":"12:22","moves":[{"id":"m2","from":"OSHAWA","to":"WR","start":"11:52","end":"12:07","sm":712,"em":727}]},
+  {"job":"10005","onduty":"WR","days":"Thu-Fri","start":"13:41","end":"20:56","moves":[{"id":"m3","from":"WR","to":"MTJOY","start":"13:56","end":"14:56","sm":836,"em":896},{"id":"m4","from":"OSHAWA","to":"WR","start":"20:26","end":"20:41","sm":1226,"em":1241}]},
+  {"job":"10006","onduty":"WR","days":"Fri","start":"05:48","end":"13:48","moves":[{"id":"m5","from":"WR","to":"LI","start":"06:03","end":"07:03","sm":363,"em":423},{"id":"m6","from":"AURORA","to":"WR","start":"10:52","end":"12:17","sm":652,"em":737}]},
+  {"job":"10007","onduty":"WR","days":"Mon-Fri","start":"05:48","end":"15:25","moves":[{"id":"m7","from":"OSHAWA","to":"WRMF","start":"14:55","end":"15:10","sm":895,"em":910}]},
+  {"job":"10008","onduty":"WR","days":"Mon-Fri","start":"05:03","end":"15:59","moves":[{"id":"m8","from":"MTJOY","to":"WR","start":"14:59","end":"15:44","sm":899,"em":944}]},
+  {"job":"10010","onduty":"WR","days":"Mon-Fri","start":"05:56","end":"16:39","moves":[{"id":"m9","from":"AURORA","to":"WR","start":"14:59","end":"16:24","sm":899,"em":984}]},
+  {"job":"10011","onduty":"WR","days":"Mon-Fri","start":"14:22","end":"01:09","moves":[{"id":"m10","from":"WR","to":"OSHAWA","start":"14:37","end":"14:52","sm":877,"em":892}]},
+  {"job":"10012","onduty":"WR","days":"Mon-Thu","start":"15:19","end":"01:37","moves":[]},
+  {"job":"10012","onduty":"WR","days":"Fri","start":"15:19","end":"01:37","moves":[]},
+  {"job":"10014","onduty":"WR","days":"Mon-Fri","start":"16:15","end":"02:37","moves":[{"id":"m11","from":"MILTONL","to":"WB","start":"19:47","end":"21:12","sm":1187,"em":1272},{"id":"m12","from":"LINCLNVL","to":"WR","start":"01:22","end":"02:22","sm":82,"em":142}]},
+  {"job":"10015","onduty":"WR","days":"Mon-Fri","start":"04:27","end":"11:55","moves":[{"id":"m13","from":"OSHAWA","to":"WRMF","start":"11:25","end":"11:40","sm":685,"em":700}]},
+  {"job":"10016","onduty":"WR","days":"Mon-Thu","start":"13:22","end":"00:07","moves":[{"id":"m14","from":"WR","to":"OSHAWA","start":"13:37","end":"13:52","sm":817,"em":832}]},
+  {"job":"10016","onduty":"WR","days":"Fri","start":"13:22","end":"20:23","moves":[{"id":"m15","from":"WR","to":"OSHAWA","start":"13:37","end":"13:52","sm":817,"em":832},{"id":"m16","from":"OSHAWA","to":"WR","start":"19:53","end":"20:08","sm":1193,"em":1208}]},
+  {"job":"10017","onduty":"WR","days":"Mon-Fri","start":"16:07","end":"00:37","moves":[{"id":"m17","from":"MILTONL","to":"WB","start":"19:17","end":"20:42","sm":1157,"em":1242}]},
+  {"job":"10018","onduty":"WR","days":"Mon-Thu","start":"15:46","end":"00:51","moves":[]},
+  {"job":"10018","onduty":"WR","days":"Fri","start":"15:46","end":"02:37","moves":[]},
+  {"job":"10019","onduty":"WR","days":"Mon-Fri","start":"13:52","end":"20:08","moves":[{"id":"m18","from":"WR","to":"OSHAWA","start":"14:07","end":"14:22","sm":847,"em":862},{"id":"m19","from":"BRADFDL","to":"WR","start":"18:18","end":"19:53","sm":1098,"em":1193}]},
+  {"job":"10082","onduty":"WR","days":"Wed-Fri","start":"04:18","end":"14:22","moves":[{"id":"m20","from":"WR","to":"LI","start":"04:33","end":"05:33","sm":273,"em":333},{"id":"m21","from":"WRMF","to":"OSHAWA","start":"11:07","end":"11:22","sm":667,"em":682},{"id":"m22","from":"OSHAWA","to":"WR","start":"13:52","end":"14:07","sm":832,"em":847}]},
+  {"job":"10502","onduty":"WR","days":"Mon-Fri","start":"06:26","end":"17:51","moves":[]},
+  {"job":"10503","onduty":"WR","days":"Mon-Fri","start":"06:53","end":"18:21","moves":[]},
+  {"job":"10504","onduty":"WR","days":"Mon-Fri","start":"06:56","end":"18:13","moves":[]},
+  {"job":"10505","onduty":"WR","days":"Mon-Fri","start":"06:23","end":"17:43","moves":[]},
+  {"job":"10506","onduty":"WR","days":"Mon-Fri","start":"05:53","end":"17:23","moves":[{"id":"m23","from":"BNY","to":"WB","start":"08:02","end":"08:32","sm":482,"em":512},{"id":"m24","from":"OSHAWA","to":"WRMF","start":"16:53","end":"17:08","sm":1013,"em":1028}]},
+  {"job":"10507","onduty":"WR","days":"Mon-Fri","start":"15:18","end":"02:07","moves":[{"id":"m25","from":"WR","to":"DY","start":"15:33","end":"16:48","sm":933,"em":1008}]},
+  {"job":"11001","onduty":"WB","days":"Mon-Fri","start":"11:27","end":"22:03","moves":[]},
+  {"job":"11015","onduty":"WB","days":"Mon-Fri","start":"04:46","end":"12:38","moves":[{"id":"m26","from":"DY","to":"WB","start":"11:53","end":"12:23","sm":713,"em":743}]},
+  {"job":"11016","onduty":"WB","days":"Mon-Fri","start":"11:59","end":"21:47","moves":[{"id":"m27","from":"MILTONL","to":"WB","start":"20:32","end":"21:32","sm":1232,"em":1292}]},
+  {"job":"11017","onduty":"WB","days":"Mon-Fri","start":"03:35","end":"12:01","moves":[{"id":"m28","from":"WB","to":"MILTONL","start":"03:50","end":"05:15","sm":230,"em":315}]},
+  {"job":"11019","onduty":"WB","days":"Fri","start":"08:59","end":"19:23","moves":[{"id":"m29","from":"LINCLNVL","to":"WB","start":"18:08","end":"19:08","sm":1088,"em":1148}]},
+  {"job":"11024","onduty":"WB","days":"Mon-Fri","start":"03:17","end":"11:31","moves":[]},
+  {"job":"11026","onduty":"WB","days":"Mon-Fri","start":"05:11","end":"11:01","moves":[]},
+  {"job":"11030","onduty":"WB","days":"Mon-Fri","start":"05:41","end":"16:27","moves":[]},
+  {"job":"11031","onduty":"WB","days":"Mon-Fri","start":"03:59","end":"12:36","moves":[{"id":"m30","from":"WB","to":"GEORGTW","start":"04:14","end":"05:14","sm":254,"em":314},{"id":"m31","from":"SH","to":"WB","start":"11:06","end":"12:21","sm":666,"em":741}]},
+  {"job":"11032","onduty":"WB","days":"Mon-Fri","start":"04:16","end":"14:31","moves":[]},
+  {"job":"11033","onduty":"WB","days":"Mon-Fri","start":"03:25","end":"11:59","moves":[]},
+  {"job":"11038","onduty":"WB","days":"Mon-Fri","start":"05:14","end":"14:01","moves":[]},
+  {"job":"11040","onduty":"WB","days":"Mon-Fri","start":"04:05","end":"13:01","moves":[{"id":"m32","from":"WB","to":"MILTONL","start":"04:20","end":"05:45","sm":260,"em":345},{"id":"m33","from":"WB","to":"AURORA","start":"08:13","end":"09:58","sm":493,"em":598}]},
+  {"job":"11041","onduty":"WB","days":"Mon-Fri","start":"05:14","end":"11:31","moves":[]},
+  {"job":"11091","onduty":"WB","days":"Mon-Fri","start":"05:45","end":"14:15","moves":[]},
+  {"job":"11201","onduty":"WB","days":"Fri","start":"13:29","end":"20:10","moves":[{"id":"m34","from":"KTCHLF","to":"WB","start":"18:40","end":"19:55","sm":1120,"em":1195}]},
+  {"job":"11202","onduty":"WB","days":"Mon-Fri","start":"12:13","end":"21:32","moves":[{"id":"m35","from":"WB","to":"SHIRLYL","start":"12:28","end":"14:43","sm":748,"em":883}]},
+  {"job":"11203","onduty":"WB","days":"Mon-Fri","start":"12:46","end":"00:13","moves":[{"id":"m36","from":"WB","to":"AURORA","start":"13:01","end":"14:46","sm":781,"em":886},{"id":"m37","from":"WB","to":"AURORA","start":"13:01","end":"14:46","sm":781,"em":886}]},
+  {"job":"11204","onduty":"WB","days":"Mon-Fri","start":"14:00","end":"21:42","moves":[{"id":"m38","from":"WB","to":"DONYARD","start":"14:15","end":"15:15","sm":855,"em":915},{"id":"m39","from":"KTCHLF","to":"WB","start":"20:12","end":"21:27","sm":1212,"em":1287}]},
+  {"job":"11205","onduty":"WB","days":"Mon-Fri","start":"14:14","end":"21:02","moves":[]},
+  {"job":"11206","onduty":"WB","days":"Mon-Fri","start":"14:24","end":"00:32","moves":[]},
+  {"job":"11207","onduty":"WB","days":"Mon-Fri","start":"14:31","end":"23:12","moves":[{"id":"m40","from":"AURORA","to":"WB","start":"21:47","end":"22:57","sm":1307,"em":1377}]},
+  {"job":"11208","onduty":"WB","days":"Mon-Fri","start":"14:57","end":"22:32","moves":[]},
+  {"job":"11209","onduty":"WB","days":"Mon-Fri","start":"14:59","end":"01:18","moves":[]},
+  {"job":"11210","onduty":"WB","days":"Mon-Thu","start":"15:35","end":"02:44","moves":[{"id":"m41","from":"LR","to":"WB","start":"01:09","end":"02:29","sm":69,"em":149}]},
+  {"job":"11210","onduty":"WB","days":"Fri","start":"15:35","end":"01:01","moves":[{"id":"m42","from":"WRMF","to":"WB","start":"23:36","end":"00:46","sm":1416,"em":1486}]},
+  {"job":"11211","onduty":"WB","days":"Mon-Thu","start":"15:58","end":"01:14","moves":[{"id":"m43","from":"WB","to":"BNY","start":"16:13","end":"17:13","sm":973,"em":1033}]},
+  {"job":"11211","onduty":"WB","days":"Fri","start":"15:58","end":"02:45","moves":[{"id":"m44","from":"WB","to":"BNY","start":"16:13","end":"17:13","sm":973,"em":1033}]},
+  {"job":"11212","onduty":"WB","days":"Mon-Fri","start":"16:32","end":"02:02","moves":[{"id":"m45","from":"LINCLNVL","to":"WB","start":"00:32","end":"01:47","sm":32,"em":107}]},
+  {"job":"11213","onduty":"WB","days":"Mon-Fri","start":"16:52","end":"02:19","moves":[]},
+  {"job":"11214","onduty":"WB","days":"Mon-Fri","start":"17:30","end":"01:10","moves":[]},
+  {"job":"11218","onduty":"WB","days":"Mon-Fri","start":"16:01","end":"00:00","moves":[{"id":"m46","from":"AE","to":"AURORA","start":"19:51","end":"21:06","sm":1191,"em":1266}]},
+  {"job":"11219","onduty":"WB","days":"Mon-Thu","start":"15:02","end":"00:33","moves":[{"id":"m47","from":"KTCHLF","to":"WB","start":"18:40","end":"19:55","sm":1120,"em":1195},{"id":"m48","from":"WRMF","to":"WB","start":"23:08","end":"00:18","sm":1388,"em":1458}]},
+  {"job":"11220","onduty":"WB","days":"Mon-Fri","start":"13:57","end":"22:32","moves":[{"id":"m49","from":"WRMF","to":"OSHAWA","start":"20:08","end":"20:23","sm":1208,"em":1223}]},
+  {"job":"11221","onduty":"WB","days":"Mon-Fri","start":"17:34","end":"03:59","moves":[{"id":"m50","from":"LR","to":"WB","start":"02:24","end":"03:44","sm":144,"em":224}]},
+  {"job":"11222","onduty":"WB","days":"Mon-Thu","start":"15:13","end":"00:52","moves":[{"id":"m51","from":"AE","to":"WB","start":"18:41","end":"20:41","sm":1121,"em":1241}]},
+  {"job":"11223","onduty":"WB","days":"Mon-Fri","start":"14:02","end":"23:32","moves":[]},
+  {"job":"11225","onduty":"WB","days":"Mon-Fri","start":"13:29","end":"22:58","moves":[{"id":"m52","from":"HA","to":"WESTHAR","start":"18:56","end":"19:11","sm":1136,"em":1151}]},
+  {"job":"11226","onduty":"WB","days":"Fri","start":"17:58","end":"23:32","moves":[]},
+  {"job":"11227","onduty":"WB","days":"Mon-Thu","start":"14:29","end":"00:58","moves":[{"id":"m53","from":"HA","to":"WB","start":"17:26","end":"18:56","sm":1046,"em":1136}]},
+  {"job":"11227","onduty":"WB","days":"Fri","start":"14:29","end":"00:43","moves":[{"id":"m54","from":"HA","to":"WB","start":"17:26","end":"18:56","sm":1046,"em":1136}]},
+  {"job":"11234","onduty":"WB","days":"Mon-Thu","start":"14:31","end":"23:03","moves":[]},
+  {"job":"11235","onduty":"WB","days":"Fri","start":"15:13","end":"21:06","moves":[{"id":"m55","from":"ALLNLF","to":"WB","start":"18:41","end":"20:51","sm":1121,"em":1251}]},
+  {"job":"11236","onduty":"WB","days":"Thu-Fri","start":"14:49","end":"23:10","moves":[{"id":"m56","from":"WB","to":"DONYARD","start":"15:04","end":"16:04","sm":904,"em":964},{"id":"m57","from":"SH","to":"WB","start":"21:40","end":"22:55","sm":1300,"em":1375}]},
+  {"job":"11239","onduty":"WB","days":"Mon-Fri","start":"15:00","end":"23:32","moves":[{"id":"m58","from":"WB","to":"DONYARD","start":"15:15","end":"16:15","sm":915,"em":975},{"id":"m59","from":"GE","to":"WB","start":"18:08","end":"19:08","sm":1088,"em":1148},{"id":"m60","from":"SH","to":"WB","start":"01:18","end":"02:33","sm":78,"em":153}]},
+  {"job":"11290","onduty":"WB","days":"Mon-Fri","start":"12:45","end":"22:45","moves":[]},
+  {"job":"11500","onduty":"WB","days":"Mon-Fri","start":"05:05","end":"15:59","moves":[{"id":"m61","from":"DY","to":"WB","start":"08:02","end":"08:32","sm":482,"em":512}]},
+  {"job":"11504","onduty":"WB","days":"Mon-Fri","start":"04:51","end":"14:01","moves":[{"id":"m62","from":"WB","to":"GEORGTW","start":"05:06","end":"06:06","sm":306,"em":366}]},
+  {"job":"11505","onduty":"WB","days":"Mon-Fri","start":"07:18","end":"18:53","moves":[{"id":"m63","from":"BNY","to":"WB","start":"11:05","end":"11:35","sm":665,"em":695},{"id":"m64","from":"GE","to":"WB","start":"17:38","end":"18:38","sm":1058,"em":1118}]},
+  {"job":"11529","onduty":"WB","days":"Mon-Fri","start":"05:10","end":"14:59","moves":[{"id":"m65","from":"DY","to":"WB","start":"08:25","end":"08:55","sm":505,"em":535},{"id":"m66","from":"WB","to":"WESTHAR","start":"11:09","end":"12:09","sm":669,"em":729}]},
+  {"job":"11707","onduty":"WB","days":"Fri","start":"14:29","end":"01:48","moves":[{"id":"m67","from":"HA","to":"WB","start":"19:06","end":"20:26","sm":1146,"em":1226}]},
+  {"job":"11716","onduty":"WB","days":"Mon-Fri","start":"15:20","end":"02:36","moves":[{"id":"m68","from":"WB","to":"BNY","start":"15:35","end":"16:35","sm":935,"em":995},{"id":"m69","from":"SH","to":"WB","start":"01:06","end":"02:21","sm":66,"em":141}]},
+  {"job":"12002","onduty":"LR","days":"Mon-Fri","start":"04:16","end":"12:16","moves":[{"id":"m70","from":"WB","to":"LR","start":"09:44","end":"10:44","sm":584,"em":644}]},
+  {"job":"12003","onduty":"LR","days":"Mon-Fri","start":"04:22","end":"12:57","moves":[{"id":"m71","from":"LR","to":"HA","start":"04:37","end":"05:22","sm":277,"em":322},{"id":"m72","from":"WESTHAR","to":"LR","start":"12:12","end":"12:42","sm":732,"em":762}]},
+  {"job":"12004","onduty":"LR","days":"Mon-Fri","start":"04:40","end":"15:01","moves":[{"id":"m73","from":"WB","to":"LR","start":"13:46","end":"14:46","sm":826,"em":886}]},
+  {"job":"12007","onduty":"LR","days":"Mon-Fri","start":"05:41","end":"16:32","moves":[{"id":"m74","from":"BNY","to":"WB","start":"14:32","end":"15:17","sm":872,"em":917},{"id":"m75","from":"WB","to":"LR","start":"15:17","end":"16:17","sm":917,"em":977}]},
+  {"job":"12010","onduty":"LR","days":"Mon-Fri","start":"05:22","end":"13:59","moves":[{"id":"m76","from":"LR","to":"HA","start":"05:37","end":"06:22","sm":337,"em":382},{"id":"m77","from":"WRMF","to":"OSHAWA","start":"09:10","end":"09:35","sm":550,"em":575}]},
+  {"job":"12011","onduty":"LR","days":"Mon-Fri","start":"10:00","end":"19:11","moves":[{"id":"m78","from":"HA","to":"LR","start":"18:06","end":"18:56","sm":1086,"em":1136}]},
+  {"job":"12201","onduty":"LR","days":"Mon-Thu","start":"13:14","end":"20:11","moves":[{"id":"m79","from":"LR","to":"WB","start":"13:29","end":"14:44","sm":809,"em":884},{"id":"m80","from":"HA","to":"LR","start":"19:06","end":"19:56","sm":1146,"em":1196}]},
+  {"job":"12202","onduty":"LR","days":"Mon-Thu","start":"13:12","end":"00:02","moves":[{"id":"m81","from":"WB","to":"LR","start":"22:47","end":"23:47","sm":1367,"em":1427}]},
+  {"job":"12202","onduty":"LR","days":"Fri","start":"13:12","end":"00:03","moves":[{"id":"m82","from":"WB","to":"LR","start":"22:48","end":"23:48","sm":1368,"em":1428}]},
+  {"job":"12203","onduty":"LR","days":"Mon-Fri","start":"14:27","end":"21:58","moves":[{"id":"m83","from":"LR","to":"WB","start":"14:42","end":"16:12","sm":882,"em":972},{"id":"m84","from":"WESTHAR","to":"LR","start":"21:13","end":"21:43","sm":1273,"em":1303}]},
+  {"job":"12204","onduty":"LR","days":"Mon-Thu","start":"15:04","end":"00:54","moves":[{"id":"m85","from":"LR","to":"WESTHAR","start":"15:19","end":"15:49","sm":919,"em":949}]},
+  {"job":"12204","onduty":"LR","days":"Fri","start":"15:04","end":"02:25","moves":[{"id":"m86","from":"LR","to":"WESTHAR","start":"15:19","end":"15:49","sm":919,"em":949},{"id":"m87","from":"WB","to":"LR","start":"01:10","end":"02:10","sm":70,"em":130}]},
+  {"job":"12205","onduty":"LR","days":"Mon-Fri","start":"15:26","end":"01:54","moves":[{"id":"m88","from":"LR","to":"ALDERSH","start":"15:41","end":"16:26","sm":941,"em":986}]},
+  {"job":"12206","onduty":"LR","days":"Fri","start":"20:13","end":"02:54","moves":[{"id":"m89","from":"LR","to":"WB","start":"20:28","end":"21:43","sm":1228,"em":1303}]},
+  {"job":"12207","onduty":"LR","days":"Fri","start":"13:46","end":"20:59","moves":[{"id":"m90","from":"LR","to":"DY","start":"14:01","end":"15:46","sm":841,"em":946}]},
+  {"job":"12500","onduty":"LR","days":"Mon-Fri","start":"04:52","end":"16:37","moves":[{"id":"m91","from":"LR","to":"HA","start":"05:07","end":"05:52","sm":307,"em":352},{"id":"m92","from":"WESTHAR","to":"LR","start":"15:52","end":"16:22","sm":952,"em":982}]},
+  {"job":"12501","onduty":"LR","days":"Mon-Fri","start":"05:52","end":"17:14","moves":[{"id":"m93","from":"LR","to":"HA","start":"06:07","end":"06:52","sm":367,"em":412},{"id":"m94","from":"ALDERSH","to":"LR","start":"16:29","end":"16:59","sm":989,"em":1019}]},
+  {"job":"14001","onduty":"ML","days":"Mon-Fri","start":"05:45","end":"16:31","moves":[{"id":"m95","from":"WRMF","to":"OSHAWA","start":"09:04","end":"09:19","sm":544,"em":559},{"id":"m96","from":"WB","to":"ML","start":"15:16","end":"16:16","sm":916,"em":976}]},
+  {"job":"14500","onduty":"ML","days":"Mon-Fri","start":"06:00","end":"17:17","moves":[{"id":"m97","from":"WB","to":"DONYARD","start":"11:09","end":"12:09","sm":669,"em":729}]},
+  {"job":"14501","onduty":"ML","days":"Mon-Fri","start":"06:15","end":"17:47","moves":[{"id":"m98","from":"DY","to":"WB","start":"08:54","end":"09:24","sm":534,"em":564},{"id":"m99","from":"WB","to":"BNY","start":"14:20","end":"15:20","sm":860,"em":920}]},
+  {"job":"14502","onduty":"ML","days":"Mon-Fri","start":"06:30","end":"18:02","moves":[]},
+  {"job":"14503","onduty":"ML","days":"Mon-Fri","start":"06:45","end":"18:17","moves":[{"id":"m100","from":"OSHAWA","to":"WRMF","start":"13:55","end":"14:10","sm":835,"em":850}]},
+  {"job":"14504","onduty":"ML","days":"Mon-Fri","start":"07:00","end":"18:32","moves":[]},
+  {"job":"14505","onduty":"ML","days":"Mon-Fri","start":"07:15","end":"18:47","moves":[]},
+  {"job":"14506","onduty":"ML","days":"Mon-Thu","start":"07:30","end":"19:02","moves":[{"id":"m101","from":"DY","to":"WB","start":"12:25","end":"12:55","sm":745,"em":775}]},
+  {"job":"14506","onduty":"ML","days":"Fri","start":"07:30","end":"19:02","moves":[{"id":"m102","from":"DY","to":"WB","start":"12:25","end":"12:55","sm":745,"em":775}]},
+  {"job":"15001","onduty":"AE","days":"Mon-Fri","start":"03:58","end":"13:56","moves":[{"id":"m103","from":"WB","to":"AE","start":"12:16","end":"13:41","sm":736,"em":821}]},
+  {"job":"15002","onduty":"AE","days":"Mon-Thu","start":"04:28","end":"09:49","moves":[{"id":"m104","from":"WB","to":"AE","start":"08:09","end":"09:34","sm":489,"em":574}]},
+  {"job":"15003","onduty":"AE","days":"Mon-Fri","start":"04:58","end":"14:51","moves":[{"id":"m105","from":"DY","to":"AE","start":"13:06","end":"14:36","sm":786,"em":876}]},
+  {"job":"15004","onduty":"AE","days":"Mon-Fri","start":"05:53","end":"11:52","moves":[{"id":"m106","from":"WR","to":"AE","start":"09:57","end":"11:37","sm":597,"em":697}]},
+  {"job":"15005","onduty":"AE","days":"Mon-Fri","start":"06:47","end":"17:46","moves":[{"id":"m107","from":"AURORA","to":"ALLNLF","start":"16:46","end":"17:31","sm":1006,"em":1051}]},
+  {"job":"15006","onduty":"AE","days":"Mon-Fri","start":"07:47","end":"18:21","moves":[]},
+  {"job":"15007","onduty":"AE","days":"Mon-Fri","start":"11:12","end":"19:36","moves":[{"id":"m108","from":"ALLNLF","to":"ALLNDLW","start":"11:27","end":"11:37","sm":687,"em":697},{"id":"m109","from":"AE","to":"AURORA","start":"10:41","end":"11:56","sm":641,"em":716},{"id":"m110","from":"WB","to":"AE","start":"17:32","end":"18:57","sm":1052,"em":1137}]},
+  {"job":"15201","onduty":"AE","days":"Mon-Fri","start":"14:04","end":"00:24","moves":[{"id":"m111","from":"AE","to":"WB","start":"14:19","end":"16:19","sm":859,"em":979}]},
+  {"job":"15202","onduty":"AE","days":"Mon-Fri","start":"14:53","end":"01:17","moves":[{"id":"m112","from":"AE","to":"WB","start":"15:08","end":"17:08","sm":908,"em":1028}]},
+  {"job":"15501","onduty":"AE","days":"Mon-Fri","start":"05:38","end":"16:24","moves":[]},
+  {"job":"15800","onduty":"BR","days":"Fri","start":"03:28","end":"09:24","moves":[{"id":"m113","from":"BRADFDL","to":"ALLNLF","start":"03:43","end":"04:43","sm":223,"em":283},{"id":"m114","from":"WB","to":"BR","start":"08:09","end":"09:09","sm":489,"em":549}]},
+  {"job":"15801","onduty":"BR","days":"Mon-Fri","start":"03:59","end":"12:40","moves":[{"id":"m115","from":"WB","to":"DY","start":"07:15","end":"08:15","sm":435,"em":495},{"id":"m116","from":"ALLNDLW","to":"BR","start":"11:40","end":"12:25","sm":700,"em":745}]},
+  {"job":"15802","onduty":"BR","days":"Mon-Fri","start":"05:54","end":"16:57","moves":[]},
+  {"job":"16002","onduty":"SH","days":"Mon-Thu","start":"04:31","end":"14:31","moves":[{"id":"m117","from":"WB","to":"SH","start":"12:46","end":"14:16","sm":766,"em":856}]},
+  {"job":"16002","onduty":"SH","days":"Fri","start":"04:31","end":"10:12","moves":[{"id":"m118","from":"WB","to":"SH","start":"08:27","end":"09:57","sm":507,"em":597}]},
+  {"job":"16003","onduty":"SH","days":"Mon-Fri","start":"03:50","end":"11:59","moves":[{"id":"m119","from":"KTCHNER","to":"SHIRLYL","start":"11:29","end":"11:44","sm":689,"em":704}]},
+  {"job":"16004","onduty":"SH","days":"Mon-Fri","start":"04:52","end":"10:32","moves":[{"id":"m120","from":"SH","to":"KTCHLF","start":"05:07","end":"05:22","sm":307,"em":322},{"id":"m121","from":"DY","to":"SH","start":"08:32","end":"10:17","sm":512,"em":617}]},
+  {"job":"16005","onduty":"SH","days":"Mon-Fri","start":"06:01","end":"11:48","moves":[{"id":"m122","from":"SHIRLYL","to":"KTCHLF","start":"06:16","end":"06:31","sm":376,"em":391},{"id":"m123","from":"WB","to":"SH","start":"10:03","end":"11:33","sm":603,"em":693}]},
+  {"job":"16006","onduty":"SH","days":"Mon-Fri","start":"06:26","end":"17:31","moves":[{"id":"m124","from":"WB","to":"SH","start":"15:16","end":"17:16","sm":916,"em":1036}]},
+  {"job":"16008","onduty":"SH","days":"Mon-Fri","start":"10:56","end":"20:58","moves":[{"id":"m125","from":"SHIRLYL","to":"KTCHNER","start":"11:11","end":"11:26","sm":671,"em":686},{"id":"m126","from":"WB","to":"DONYARD","start":"15:35","end":"16:35","sm":935,"em":995}]},
+  {"job":"16009","onduty":"SH","days":"Mon-Wed","start":"13:24","end":"21:55","moves":[{"id":"m127","from":"SH","to":"DY","start":"13:39","end":"16:04","sm":819,"em":964}]},
+  {"job":"16202","onduty":"SH","days":"Mon-Fri","start":"13:56","end":"00:21","moves":[{"id":"m128","from":"SHIRLYL","to":"KTCHNER","start":"14:11","end":"14:26","sm":851,"em":866},{"id":"m129","from":"SH","to":"125RD","start":"16:11","end":"17:11","sm":971,"em":1031},{"id":"m130","from":"WB","to":"SH","start":"21:47","end":"23:17","sm":1307,"em":1397}]},
+  {"job":"16501","onduty":"SH","days":"Mon-Fri","start":"04:00","end":"14:59","moves":[{"id":"m131","from":"KTCHNER","to":"SHIRLYL","start":"14:29","end":"14:44","sm":869,"em":884}]},
+  {"job":"16507","onduty":"SH","days":"Mon-Fri","start":"06:57","end":"18:21","moves":[]},
+  {"job":"17001","onduty":"RL","days":"Mon-Fri","start":"04:48","end":"13:27","moves":[{"id":"m132","from":"WR","to":"BNY","start":"09:49","end":"10:49","sm":589,"em":649},{"id":"m133","from":"AURORA","to":"RL","start":"12:47","end":"13:12","sm":767,"em":792}]},
+  {"job":"17002","onduty":"RL","days":"Mon-Fri","start":"11:29","end":"19:29","moves":[{"id":"m134","from":"RL","to":"AURORA","start":"11:44","end":"12:34","sm":704,"em":754}]},
+  {"job":"17501","onduty":"RL","days":"Mon-Fri","start":"05:49","end":"16:29","moves":[{"id":"m135","from":"BNY","to":"WB","start":"08:26","end":"08:56","sm":506,"em":536},{"id":"m136","from":"WB","to":"RL","start":"15:14","end":"16:14","sm":914,"em":974}]},
+  {"job":"17502","onduty":"RL","days":"Mon-Fri","start":"06:19","end":"17:29","moves":[{"id":"m137","from":"BNY","to":"WB","start":"08:57","end":"09:27","sm":537,"em":567}]},
+  {"job":"17503","onduty":"RL","days":"Mon-Fri","start":"06:49","end":"18:29","moves":[]},
+  {"job":"18002","onduty":"LI","days":"Mon-Tue","start":"05:08","end":"14:52","moves":[{"id":"m138","from":"WRMF","to":"OSHAWA","start":"11:07","end":"11:22","sm":667,"em":682},{"id":"m139","from":"OSHAWA","to":"LI","start":"13:52","end":"14:37","sm":832,"em":877}]},
+  {"job":"18205","onduty":"LI","days":"Mon-Wed","start":"13:56","end":"21:26","moves":[{"id":"m140","from":"LI","to":"MTJOY","start":"14:11","end":"14:56","sm":851,"em":896},{"id":"m141","from":"OSHAWA","to":"LINCLNC","start":"20:26","end":"21:11","sm":1226,"em":1271}]},
+  {"job":"18501","onduty":"LI","days":"Mon-Fri","start":"04:08","end":"15:25","moves":[{"id":"m142","from":"DY","to":"WB","start":"09:11","end":"09:41","sm":551,"em":581},{"id":"m143","from":"OSHAWA","to":"LINCLNC","start":"14:25","end":"15:10","sm":865,"em":910}]},
+  {"job":"18502","onduty":"LI","days":"Mon-Fri","start":"05:38","end":"16:48","moves":[]},
+  {"job":"18503","onduty":"LI","days":"Mon-Fri","start":"06:08","end":"17:48","moves":[]},
+  {"job":"18504","onduty":"LI","days":"Mon-Fri","start":"07:08","end":"18:48","moves":[]},
+  {"job":"18505","onduty":"LI","days":"Mon-Fri","start":"08:08","end":"19:20","moves":[]},
+  {"job":"18506","onduty":"LI","days":"Mon-Thu","start":"06:38","end":"18:18","moves":[{"id":"m144","from":"AURORA","to":"WB","start":"10:52","end":"11:52","sm":652,"em":712}]},
+  {"job":"50001","onduty":"WB","days":"Mon-Fri","start":"03:30","end":"11:01","moves":[]},
+  {"job":"50002","onduty":"WB","days":"Mon-Fri","start":"03:40","end":"14:01","moves":[]},
+  {"job":"50003","onduty":"WB","days":"Mon-Fri","start":"04:00","end":"13:31","moves":[]},
+  {"job":"50004","onduty":"WB","days":"Mon-Fri","start":"04:10","end":"15:01","moves":[]},
+  {"job":"50005","onduty":"WB","days":"Mon-Thu","start":"04:25","end":"15:31","moves":[]},
+  {"job":"50005","onduty":"WB","days":"Mon-Thu","start":"04:25","end":"15:31","moves":[]},
+  {"job":"50005","onduty":"WB","days":"Fri","start":"04:25","end":"15:31","moves":[]},
+  {"job":"50005","onduty":"WB","days":"Fri","start":"04:25","end":"15:31","moves":[]},
+  {"job":"50006","onduty":"WB","days":"Mon-Fri","start":"07:18","end":"17:49","moves":[]},
+  {"job":"50007","onduty":"WB","days":"Mon-Thu","start":"07:18","end":"14:31","moves":[]},
+  {"job":"50007","onduty":"WB","days":"Fri","start":"07:19","end":"17:49","moves":[]},
+  {"job":"50008","onduty":"WB","days":"Mon-Thu","start":"12:29","end":"19:02","moves":[]},
+  {"job":"50008","onduty":"WB","days":"Fri","start":"10:59","end":"19:02","moves":[]},
+  {"job":"50017","onduty":"WB","days":"Mon-Thu","start":"11:59","end":"18:19","moves":[]},
+  {"job":"50201","onduty":"WB","days":"Mon-Fri","start":"12:29","end":"23:02","moves":[]},
+  {"job":"50202","onduty":"WB","days":"Mon-Thu","start":"13:29","end":"23:32","moves":[]},
+  {"job":"50202","onduty":"WB","days":"Fri","start":"14:29","end":"23:32","moves":[]},
+  {"job":"50203","onduty":"WB","days":"Mon-Thu","start":"15:29","end":"02:07","moves":[]},
+  {"job":"50203","onduty":"WB","days":"Fri","start":"15:29","end":"02:02","moves":[]},
+  {"job":"50204","onduty":"WB","days":"Mon-Fri","start":"14:59","end":"02:22","moves":[]},
+  {"job":"50205","onduty":"WB","days":"Mon-Thu","start":"16:29","end":"02:30","moves":[]},
+  {"job":"50205","onduty":"WB","days":"Fri","start":"16:29","end":"02:35","moves":[]},
+  {"job":"50206","onduty":"WB","days":"Mon-Fri","start":"16:29","end":"02:45","moves":[]},
+  {"job":"50207","onduty":"WB","days":"Mon-Fri","start":"17:58","end":"02:53","moves":[]},
+  {"job":"20001","onduty":"WR","days":"Sat-Sun","start":"06:31","end":"17:07","moves":[{"id":"m145","from":"OSHAWA","to":"WR","start":"16:37","end":"16:52","sm":997,"em":1012}]},
+  {"job":"20002","onduty":"WR","days":"Sat-Sun","start":"07:31","end":"17:22","moves":[{"id":"m146","from":"OSHAWA","to":"WRMF","start":"16:52","end":"17:07","sm":1012,"em":1027}]},
+  {"job":"20003","onduty":"WR","days":"Sat-Sun","start":"08:01","end":"17:52","moves":[{"id":"m147","from":"OSHAWA","to":"WRMF","start":"17:22","end":"17:37","sm":1042,"em":1057}]},
+  {"job":"20004","onduty":"WR","days":"Sat-Sun","start":"08:31","end":"19:25","moves":[{"id":"m148","from":"OSHAWA","to":"WRMF","start":"18:55","end":"19:10","sm":1135,"em":1150}]},
+  {"job":"20082","onduty":"WR","days":"Sat-Sun","start":"07:01","end":"13:52","moves":[{"id":"m149","from":"OSHAWA","to":"WR","start":"13:22","end":"13:37","sm":802,"em":817}]},
+  {"job":"20201","onduty":"WR","days":"Sat-Sun","start":"14:09","end":"00:37","moves":[{"id":"m150","from":"WRMF","to":"OSHAWA","start":"14:24","end":"14:39","sm":864,"em":879}]},
+  {"job":"20202","onduty":"WR","days":"Sat-Sun","start":"15:52","end":"01:37","moves":[{"id":"m151","from":"WRMF","to":"OSHAWA","start":"16:07","end":"16:22","sm":967,"em":982}]},
+  {"job":"20203","onduty":"WR","days":"Sat-Sun","start":"18:22","end":"01:07","moves":[{"id":"m152","from":"WRMF","to":"OSHAWA","start":"18:37","end":"18:52","sm":1117,"em":1132}]},
+  {"job":"20204","onduty":"WR","days":"Sat-Sun","start":"19:39","end":"02:07","moves":[{"id":"m153","from":"WR","to":"OSHAWA","start":"19:54","end":"20:09","sm":1194,"em":1209}]},
+  {"job":"20205","onduty":"WR","days":"Sat","start":"16:39","end":"02:37","moves":[{"id":"m154","from":"WRMF","to":"OSHAWA","start":"16:54","end":"17:09","sm":1014,"em":1029}]},
+  {"job":"20205","onduty":"WR","days":"Sun","start":"16:39","end":"02:37","moves":[{"id":"m155","from":"WR","to":"OSHAWA","start":"16:54","end":"17:09","sm":1014,"em":1029},{"id":"m156","from":"WRMF","to":"OSHAWA","start":"16:54","end":"17:09","sm":1014,"em":1029}]},
+  {"job":"20211","onduty":"WR","days":"Sat-Sun","start":"13:17","end":"23:22","moves":[]},
+  {"job":"20212","onduty":"WR","days":"Sat-Sun","start":"13:47","end":"23:52","moves":[]},
+  {"job":"20213","onduty":"WR","days":"Sat-Sun","start":"14:17","end":"23:37","moves":[{"id":"m157","from":"OSHAWA","to":"WR","start":"23:07","end":"23:22","sm":1387,"em":1402}]},
+  {"job":"20215","onduty":"WR","days":"Sat-Sun","start":"14:47","end":"00:56","moves":[]},
+  {"job":"20216","onduty":"WR","days":"Sat-Sun","start":"15:17","end":"00:22","moves":[]},
+  {"job":"21000","onduty":"WB","days":"Sat-Sun","start":"07:32","end":"14:02","moves":[]},
+  {"job":"21001","onduty":"WB","days":"Sat-Sun","start":"05:34","end":"15:33","moves":[]},
+  {"job":"21003","onduty":"WB","days":"Sat-Sun","start":"06:28","end":"16:32","moves":[]},
+  {"job":"21004","onduty":"WB","days":"Sat-Sun","start":"07:10","end":"14:27","moves":[{"id":"m158","from":"WESTHAR","to":"WB","start":"13:12","end":"14:12","sm":792,"em":852}]},
+  {"job":"21005","onduty":"WB","days":"Sat-Sun","start":"07:28","end":"17:58","moves":[]},
+  {"job":"21006","onduty":"WB","days":"Sat-Sun","start":"08:00","end":"17:51","moves":[]},
+  {"job":"21007","onduty":"WB","days":"Sat-Sun","start":"08:28","end":"18:02","moves":[]},
+  {"job":"21008","onduty":"WB","days":"Sat-Sun","start":"08:43","end":"19:03","moves":[{"id":"m159","from":"WB","to":"DONYARD","start":"08:58","end":"09:58","sm":538,"em":598}]},
+  {"job":"21009","onduty":"WB","days":"Sat-Sun","start":"08:43","end":"17:40","moves":[{"id":"m160","from":"MTPLESN","to":"WB","start":"16:40","end":"17:25","sm":1000,"em":1045}]},
+  {"job":"21010","onduty":"WB","days":"Sat-Sun","start":"07:43","end":"16:32","moves":[]},
+  {"job":"21011","onduty":"WB","days":"Sat-Sun","start":"09:28","end":"19:32","moves":[]},
+  {"job":"21090","onduty":"WB","days":"Sat-Sun","start":"06:05","end":"16:03","moves":[{"id":"m161","from":"DONYARD","to":"WB","start":"15:18","end":"15:48","sm":918,"em":948}]},
+  {"job":"21200","onduty":"WB","days":"Sat-Sun","start":"12:13","end":"22:32","moves":[]},
+  {"job":"21201","onduty":"WB","days":"Sat","start":"13:40","end":"00:48","moves":[]},
+  {"job":"21201","onduty":"WB","days":"Sun","start":"13:40","end":"00:48","moves":[]},
+  {"job":"21202","onduty":"WB","days":"Sat-Sun","start":"13:55","end":"00:52","moves":[{"id":"m162","from":"LINCLNVL","to":"WB","start":"23:22","end":"00:37","sm":1402,"em":1477}]},
+  {"job":"21203","onduty":"WB","days":"Sat-Sun","start":"14:30","end":"23:43","moves":[]},
+  {"job":"21204","onduty":"WB","days":"Sat","start":"15:11","end":"01:07","moves":[{"id":"m163","from":"WB","to":"ALDERSH","start":"15:26","end":"16:26","sm":926,"em":986}]},
+  {"job":"21204","onduty":"WB","days":"Sun","start":"15:11","end":"01:07","moves":[{"id":"m164","from":"WB","to":"ALDERSH","start":"15:26","end":"16:26","sm":926,"em":986},{"id":"m165","from":"WRMF","to":"WB","start":"23:42","end":"00:52","sm":1422,"em":1492}]},
+  {"job":"21205","onduty":"WB","days":"Sat-Sun","start":"15:22","end":"01:43","moves":[{"id":"m166","from":"WB","to":"MTPLESN","start":"15:37","end":"16:37","sm":937,"em":997}]},
+  {"job":"21206","onduty":"WB","days":"Sat-Sun","start":"15:28","end":"00:14","moves":[]},
+  {"job":"21207","onduty":"WB","days":"Sat-Sun","start":"15:43","end":"02:02","moves":[{"id":"m167","from":"LINCLNVL","to":"WB","start":"00:32","end":"01:47","sm":32,"em":107}]},
+  {"job":"21208","onduty":"WB","days":"Sat-Sun","start":"15:42","end":"01:48","moves":[]},
+  {"job":"21209","onduty":"WB","days":"Sat-Sun","start":"15:58","end":"01:45","moves":[]},
+  {"job":"21210","onduty":"WB","days":"Sat-Sun","start":"15:58","end":"02:31","moves":[]},
+  {"job":"21212","onduty":"WB","days":"Sat-Sun","start":"14:28","end":"23:32","moves":[{"id":"m168","from":"WB","to":"BRAMALE","start":"14:43","end":"15:28","sm":883,"em":928}]},
+  {"job":"21213","onduty":"WB","days":"Sat","start":"16:11","end":"01:02","moves":[{"id":"m169","from":"WB","to":"ALDERSH","start":"16:26","end":"17:26","sm":986,"em":1046}]},
+  {"job":"21213","onduty":"WB","days":"Sun","start":"16:11","end":"01:02","moves":[{"id":"m170","from":"WB","to":"ALDERSH","start":"16:26","end":"17:26","sm":986,"em":1046}]},
+  {"job":"21214","onduty":"WB","days":"Sat","start":"16:32","end":"23:03","moves":[]},
+  {"job":"21214","onduty":"WB","days":"Sun","start":"16:32","end":"23:02","moves":[]},
+  {"job":"21215","onduty":"WB","days":"Sat","start":"18:02","end":"02:46","moves":[]},
+  {"job":"21215","onduty":"WB","days":"Sun","start":"18:02","end":"02:46","moves":[]},
+  {"job":"21216","onduty":"WB","days":"Sat-Sun","start":"14:58","end":"01:52","moves":[{"id":"m171","from":"WRMF","to":"WB","start":"00:27","end":"01:37","sm":27,"em":97}]},
+  {"job":"21220","onduty":"WB","days":"Sat-Sun","start":"13:28","end":"20:48","moves":[{"id":"m172","from":"SH","to":"WB","start":"19:18","end":"20:33","sm":1158,"em":1233}]},
+  {"job":"21221","onduty":"WB","days":"Sat-Sun","start":"12:28","end":"21:47","moves":[]},
+  {"job":"21222","onduty":"WB","days":"Sat-Sun","start":"13:28","end":"23:53","moves":[]},
+  {"job":"21223","onduty":"WB","days":"Sat-Sun","start":"13:58","end":"00:17","moves":[]},
+  {"job":"21224","onduty":"WB","days":"Sat-Sun","start":"13:51","end":"00:27","moves":[]},
+  {"job":"21225","onduty":"WB","days":"Sat-Sun","start":"14:43","end":"00:48","moves":[]},
+  {"job":"21290","onduty":"WB","days":"Sat-Sun","start":"14:00","end":"22:49","moves":[{"id":"m173","from":"WB","to":"DONYARD","start":"14:15","end":"15:15","sm":855,"em":915}]},
+  {"job":"22001","onduty":"LR","days":"Sat-Sun","start":"05:57","end":"16:59","moves":[]},
+  {"job":"22002","onduty":"LR","days":"Sat-Sun","start":"06:57","end":"17:14","moves":[{"id":"m174","from":"ALDERSH","to":"LR","start":"16:29","end":"16:59","sm":989,"em":1019}]},
+  {"job":"22003","onduty":"LR","days":"Sat-Sun","start":"07:57","end":"17:39","moves":[{"id":"m175","from":"ALDERSH","to":"LR","start":"16:54","end":"17:24","sm":1014,"em":1044}]},
+  {"job":"22004","onduty":"LR","days":"Sat-Sun","start":"09:57","end":"18:14","moves":[{"id":"m176","from":"ALDERSH","to":"LR","start":"17:29","end":"17:59","sm":1049,"em":1079}]},
+  {"job":"22201","onduty":"LR","days":"Sat-Sun","start":"12:24","end":"23:00","moves":[{"id":"m177","from":"LR","to":"WESTHAR","start":"12:39","end":"13:09","sm":759,"em":789}]},
+  {"job":"22202","onduty":"LR","days":"Sat-Sun","start":"14:26","end":"00:54","moves":[{"id":"m178","from":"LR","to":"ALDERSH","start":"14:41","end":"15:26","sm":881,"em":926}]},
+  {"job":"22203","onduty":"LR","days":"Sat-Sun","start":"17:57","end":"01:56","moves":[]},
+  {"job":"22204","onduty":"LR","days":"Sat","start":"19:43","end":"02:56","moves":[{"id":"m179","from":"LR","to":"WB","start":"19:58","end":"21:13","sm":1198,"em":1273}]},
+  {"job":"22204","onduty":"LR","days":"Sun","start":"19:43","end":"02:56","moves":[{"id":"m180","from":"LR","to":"WB","start":"19:58","end":"21:13","sm":1198,"em":1273}]},
+  {"job":"25001","onduty":"AE","days":"Sat-Sun","start":"05:46","end":"16:27","moves":[{"id":"m181","from":"WB","to":"AE","start":"14:47","end":"16:12","sm":887,"em":972}]},
+  {"job":"25002","onduty":"AE","days":"Sat-Sun","start":"06:46","end":"17:10","moves":[{"id":"m182","from":"ALLNDLW","to":"AE","start":"16:40","end":"16:55","sm":1000,"em":1015}]},
+  {"job":"25200","onduty":"AE","days":"Sat-Sun","start":"13:12","end":"23:21","moves":[{"id":"m183","from":"ALLNLF","to":"ALLNDLW","start":"13:27","end":"13:37","sm":807,"em":817}]},
+  {"job":"25201","onduty":"AE","days":"Sat-Sun","start":"16:12","end":"00:43","moves":[{"id":"m184","from":"ALLNLF","to":"ALLNDLW","start":"16:27","end":"16:37","sm":987,"em":997},{"id":"m185","from":"BRADFDL","to":"AE","start":"23:33","end":"00:28","sm":1413,"em":1468}]},
+  {"job":"25202","onduty":"AE","days":"Sat-Sun","start":"16:14","end":"01:17","moves":[{"id":"m186","from":"AE","to":"AURORA","start":"16:29","end":"17:44","sm":989,"em":1064}]},
+  {"job":"25801","onduty":"BR","days":"Sat-Sun","start":"07:11","end":"15:39","moves":[{"id":"m187","from":"AURORA","to":"BR","start":"14:54","end":"15:24","sm":894,"em":924}]},
+  {"job":"25803","onduty":"BR","days":"Sat-Sun","start":"10:41","end":"19:02","moves":[{"id":"m188","from":"BR","to":"AURORA","start":"10:56","end":"11:56","sm":656,"em":716},{"id":"m189","from":"WB","to":"BR","start":"17:47","end":"18:47","sm":1067,"em":1127}]},
+  {"job":"26000","onduty":"SH","days":"Sat-Sun","start":"03:59","end":"10:55","moves":[{"id":"m190","from":"SH","to":"WB","start":"04:14","end":"06:14","sm":254,"em":374},{"id":"m191","from":"KTCHNER","to":"SHIRLYL","start":"10:25","end":"10:40","sm":625,"em":640}]},
+  {"job":"26001","onduty":"SH","days":"Sat-Sun","start":"06:35","end":"17:02","moves":[{"id":"m192","from":"WB","to":"SH","start":"15:17","end":"16:47","sm":917,"em":1007}]},
+  {"job":"26002","onduty":"SH","days":"Sat-Sun","start":"09:53","end":"18:29","moves":[{"id":"m193","from":"SHIRLYL","to":"KTCHNER","start":"10:08","end":"10:23","sm":608,"em":623},{"id":"m194","from":"125RD","to":"SH","start":"17:14","end":"18:14","sm":1034,"em":1094}]},
+  {"job":"26202","onduty":"SH","days":"Sat-Sun","start":"14:35","end":"00:42","moves":[{"id":"m195","from":"BRAMALE","to":"SH","start":"22:57","end":"00:27","sm":1377,"em":1467}]},
+  {"job":"26203","onduty":"SH","days":"Sat-Sun","start":"15:56","end":"01:33","moves":[{"id":"m196","from":"SH","to":"125RD","start":"16:11","end":"17:11","sm":971,"em":1031}]},
+  {"job":"28001","onduty":"LI","days":"Sat-Sun","start":"06:09","end":"15:15","moves":[{"id":"m197","from":"ALLNDLW","to":"LI","start":"13:40","end":"15:00","sm":820,"em":900}]},
+  {"job":"28003","onduty":"LI","days":"Sat-Sun","start":"07:09","end":"17:25","moves":[{"id":"m198","from":"OSHAWA","to":"LINCLNC","start":"16:25","end":"17:10","sm":985,"em":1030}]},
+  {"job":"28004","onduty":"LI","days":"Sat-Sun","start":"08:09","end":"18:42","moves":[{"id":"m199","from":"AURORA","to":"LI","start":"17:47","end":"18:27","sm":1067,"em":1107}]},
+  {"job":"28201","onduty":"LI","days":"Sat-Sun","start":"12:00","end":"22:47","moves":[{"id":"m200","from":"LI","to":"WB","start":"12:15","end":"13:45","sm":735,"em":825}]},
+  {"job":"52001","onduty":"WB","days":"Sat-Sun","start":"04:29","end":"12:02","moves":[]},
+  {"job":"52002","onduty":"WB","days":"Sat-Sun","start":"04:35","end":"15:02","moves":[]},
+  {"job":"52003","onduty":"WB","days":"Sat-Sun","start":"04:55","end":"15:02","moves":[]},
+  {"job":"52004","onduty":"WB","days":"Sat-Sun","start":"05:10","end":"16:02","moves":[]},
+  {"job":"52005","onduty":"WB","days":"Sat-Sun","start":"05:25","end":"17:02","moves":[]},
+  {"job":"52006","onduty":"WB","days":"Sat-Sun","start":"07:58","end":"19:02","moves":[]},
+  {"job":"52007","onduty":"WB","days":"Sat-Sun","start":"08:28","end":"18:32","moves":[]},
+  {"job":"52008","onduty":"WB","days":"Sat-Sun","start":"11:58","end":"23:02","moves":[]},
+  {"job":"52008","onduty":"WB","days":"Sat-Sun","start":"11:58","end":"23:02","moves":[]},
+  {"job":"52201","onduty":"WB","days":"Sat-Sun","start":"12:58","end":"23:32","moves":[]},
+  {"job":"52202","onduty":"WB","days":"Sat-Sun","start":"14:28","end":"02:07","moves":[]},
+  {"job":"52203","onduty":"WB","days":"Sat-Sun","start":"16:28","end":"02:38","moves":[]},
+  {"job":"52204","onduty":"WB","days":"Sat-Sun","start":"16:28","end":"02:23","moves":[]},
+  {"job":"52205","onduty":"WB","days":"Sat","start":"16:58","end":"03:03","moves":[]},
+  {"job":"52205","onduty":"WB","days":"Sun","start":"16:58","end":"02:58","moves":[]},
+  {"job":"52206","onduty":"WB","days":"Sat","start":"19:35","end":"02:22","moves":[]},
+  {"job":"52206","onduty":"WB","days":"Sun","start":"19:35","end":"02:17","moves":[]}
+];
+let JOBS = BUILTIN_JOBS;
+const JOBSVER="2026-07-05";
+
+/* Location aliases — merge short/long codes into one canonical name.
+   Applied everywhere a location is read, and re-applied to any future upload. */
+const ALIAS={
+  "SH":"SHIRLEY","SHIRLYL":"SHIRLEY",
+  "LINCLNC":"LINCOLNVILLE","LI":"LINCOLNVILLE","LINCLNVL":"LINCOLNVILLE",
+  "WRMF":"WHITBY RAIL","WR":"WHITBY RAIL",
+  "DONYARD":"DON YARD","DY":"DON YARD",
+  "ALLNLF":"ALLANDALE WATERFRONT","AE":"ALLANDALE WATERFRONT","ALLNDLW":"ALLANDALE WATERFRONT",
+  "KTCHLF":"KITCHENER","KTCHNER":"KITCHENER",
+  "RICHMHL":"RICHMOND HILL","RL":"RICHMOND HILL",
+  "MILTONL":"MILTON","ML":"MILTON",
+  "LR":"LEWIS ROAD","HA":"HAMILTON","BR":"BRADFORD","BRADFDL":"BRADFORD","WB":"WILLOWBROOK",
+  "GEORGTW":"GEORGETOWN","WESTHAR":"WEST HARBOUR GO","ALDERSH":"ALDERSHOT GO","MTPLESN":"MOUNT PLEASANT GO","BRAMALE":"BRAMALEA",
+  /* fold previously-saved staging stored under old display names */
+  "Lincolnville Yard":"LINCOLNVILLE","Whitby Rail":"WHITBY RAIL","Shirley":"SHIRLEY","Kitchener":"KITCHENER",
+  "Allandale Waterfront":"ALLANDALE WATERFRONT","Richmond Hill":"RICHMOND HILL"
+};
+function canon(L){return L?(ALIAS[L]||L):L;}
+
+/* ---- parse a job-package's extracted text into JOBS (raw codes; canon() converts at runtime) ---- */
+function parseJobs(text){
+  const LAB={"Mon-Fri":"Mon-Fri","Sat-Sun":"Sat-Sun","Friday ONLY":"Fri","Mon-Thu ONLY":"Mon-Thu","Saturday ONLY":"Sat","Sunday ONLY":"Sun","Thu-Fri ONLY":"Thu-Fri","Mon-Wed ONLY":"Mon-Wed","Wed-Fri ONLY":"Wed-Fri","Mon-Tue ONLY":"Mon-Tue"};
+  const PATS=["Mon-Fri","Sat-Sun","Friday ONLY","Mon-Thu ONLY","Saturday ONLY","Sunday ONLY","Thu-Fri ONLY","Mon-Wed ONLY","Wed-Fri ONLY","Mon-Tue ONLY"];
+  const blocks=text.split(/(?=Job no\.:)/).filter(b=>/Job no\.:/.test(b));
+  const jn=b=>(b.match(/Job no\.:\s*(\S+)/)||[])[1];
+  const endof=b=>(b.match(/Job end:\s*([\d:]+)/)||["",""])[1];
+  const startof=b=>(b.match(/Job start:\s*([\d:]+)/)||["",""])[1];
+  const ondof=b=>(b.match(/On duty location:\s*(\S+)/)||["",""])[1];
+  const norm=s=>(s||"").replace(/[#<>.]+$/,"").trim();
+  const TIME=/^\d{2}:\d{2}$/;
+  const labRe=new RegExp("Valid from:\\s*[\\d.]+\\s+("+PATS.join("|")+")");
+  function label(b){const m=b.match(labRe);return m?LAB[m[1]]:"";}
+  function mins(t){const p=t.split(":");return (+p[0])*60+(+p[1]);}
+  function vans(b){const o=[];b.split("\n").forEach(l=>{if(l.indexOf("PDTIME")>=0)return;const t=l.trim().split(/\s+/);let vi=-1,count=1;
+    for(let i=0;i<t.length;i++){if(t[i]==="VAN"){vi=i;count=1;break;}if(t[i]==="VANS"){vi=i;if(i>=1&&/^\d+$/.test(t[i-1]))count=parseInt(t[i-1],10);break;}}
+    if(vi<0)return;let ti=-1;for(let i=vi+1;i<t.length;i++){if(TIME.test(t[i])){ti=i;break;}}
+    if(ti>=vi+3){const en=(ti+1<t.length&&TIME.test(t[ti+1]))?t[ti+1]:t[ti];o.push([norm(t[ti-2]),norm(t[ti-1]),t[ti],en,count]);}});return o;}
+  const Avar=new Map(),Bblk=new Map();
+  blocks.forEach(b=>{const L=label(b),job=jn(b);if(!job)return;
+    if(L){if(!Avar.has(job))Avar.set(job,[]);Avar.get(job).push({days:L,end:endof(b),start:startof(b),onduty:norm(ondof(b)),vans:vans(b)});}
+    else{if(!Bblk.has(job))Bblk.set(job,[]);Bblk.get(job).push({end:endof(b),vans:vans(b)});}});
+  let ctr=0;const out=[];
+  for(const [job,variants] of Avar){const bblocks=Bblk.get(job)||[];const multi=variants.length>1;
+    variants.forEach(varr=>{let match=multi?bblocks.filter(bb=>bb.end===varr.end):bblocks;if(multi&&!match.length)match=bblocks;
+      const seen=new Set(),vl=[];
+      [{vans:varr.vans}].concat(match).forEach(bb=>bb.vans.forEach(a=>{const frm=a[0],to=a[1],st=a[2],en=a[3],count=a[4];const key=frm+"|"+to+"|"+st+"|"+en;if(seen.has(key))return;seen.add(key);
+        let sm=mins(st),em=mins(en);if(em<sm)em+=1440;for(let k=0;k<count;k++){vl.push({id:"m"+ctr,from:frm,to:to,start:st,end:en,sm:sm,em:em});ctr++;}}));
+      out.push({job:job,onduty:varr.onduty,days:varr.days,start:varr.start,end:varr.end,moves:vl});});}
+  return out;
+}
+async function pdfToText(file,onProgress){
+  if(!window.pdfjsLib)throw new Error("PDF reader didn't load — check your connection and try again.");
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const pages=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p),tc=await page.getTextContent();
+    const lines={};
+    tc.items.forEach(it=>{const y=Math.round(it.transform[5]),x=it.transform[4];(lines[y]=lines[y]||[]).push([x,it.str]);});
+    Object.keys(lines).map(Number).sort((a,b)=>b-a).forEach(y=>{pages.push(lines[y].sort((a,b)=>a[0]-b[0]).map(z=>z[1]).join(" "));});
+    pages.push("");
+    if(onProgress&&(p%10===0||p===pdf.numPages))onProgress(p,pdf.numPages);
+  }
+  return pages.join("\n");
+}
+
+let LOCS=[];
+function rebuildLocs(){const s=new Set();JOBS.forEach(j=>{if(j.onduty)s.add(canon(j.onduty));j.moves.forEach(m=>{s.add(canon(m.from));s.add(canon(m.to));});});LOCS=[...s].filter(Boolean).sort();}
+rebuildLocs();
+const DOW=[["Mon",1],["Tue",2],["Wed",3],["Thu",4],["Fri",5],["Sat",6],["Sun",7]];
+
+let state={fleetCount:45,fleet:{},staged:{},vanmap:{},manual:{},extra:{},showNums:true};
+let curDow=1,editVan=null,locInited=false,posInited=false,posFollow=true,editPosVan=null,proposed=null;
+let schedSort={key:"start",dir:1},vanFilter="";
+
+function buildFleet(n){const f={};for(let i=1;i<=n;i++)f[i]={status:"available",last:"",next:"",odo:"",notes:"",history:[]};return f;}
+
+/* ---------- persistence: Supabase (for the published/hosted app) with local fallback (in-chat preview) ---------- */
+/* Backend: blank = save to this browser only (your data stays private to you).
+   To sync across devices, create your own free Supabase project and paste its
+   URL + publishable key here. See README. */
+const SUPA_URL="";
+const SUPA_KEY="";
+const SUPA_HEAD={apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+const local=(typeof window!=="undefined"&&window.storage)?window.storage:null;
+const supa={
+  async get(key){const r=await fetch(SUPA_URL+"/rest/v1/dispatch_state?key=eq."+encodeURIComponent(key)+"&select=value",{headers:SUPA_HEAD});if(!r.ok)throw new Error("supa "+r.status);const rows=await r.json();return rows.length?{value:JSON.stringify(rows[0].value)}:null;},
+  async set(key,value){const body=[{key:key,value:JSON.parse(value),updated_at:new Date().toISOString()}];const r=await fetch(SUPA_URL+"/rest/v1/dispatch_state?on_conflict=key",{method:"POST",headers:Object.assign({Prefer:"resolution=merge-duplicates"},SUPA_HEAD),body:JSON.stringify(body)});if(!r.ok)throw new Error("supa "+r.status);return {value:value};},
+  async del(key){const r=await fetch(SUPA_URL+"/rest/v1/dispatch_state?key=eq."+encodeURIComponent(key),{method:"DELETE",headers:SUPA_HEAD});if(!r.ok)throw new Error("supa "+r.status);return {deleted:true};}
+};
+let supaOk=!!(SUPA_URL&&SUPA_KEY);
+const store={
+  async get(key){if(supaOk){try{return await supa.get(key);}catch(e){supaOk=false;}}return local?await local.get(key):null;},
+  async set(key,value,shared){if(supaOk){try{await supa.set(key,value);}catch(e){supaOk=false;}}if(local){try{await local.set(key,value,shared);}catch(e){}}return {value:value};},
+  async delete(key){if(supaOk){try{await supa.del(key);}catch(e){supaOk=false;}}if(local){try{await local.delete(key);}catch(e){}}return {deleted:true};}
+};
+
+async function load(){
+  try{const rv=await store.get("vandispatch:jobsver");const sv=rv&&rv.value?JSON.parse(rv.value):null;if(sv!==JOBSVER){for(const k of ["vandispatch:jobs","vandispatch:staged","vandispatch:vanmap","vandispatch:manual","vandispatch:extra"]){try{await store.delete(k);}catch(e){}}try{await store.set("vandispatch:jobsver",JSON.stringify(JOBSVER),false);}catch(e){}}else{const r=await store.get("vandispatch:jobs");if(r&&r.value){const j=JSON.parse(r.value);if(Array.isArray(j)&&j.length){JOBS=j;rebuildLocs();}}}}catch(e){}
+  try{const r=await store.get("vandispatch:fleetcount");state.fleetCount=r&&r.value?JSON.parse(r.value):45;}catch(e){state.fleetCount=45;}
+  try{const r=await store.get("vandispatch:fleet");state.fleet=r&&r.value?JSON.parse(r.value):buildFleet(state.fleetCount);}catch(e){state.fleet=buildFleet(state.fleetCount);}
+  try{const r=await store.get("vandispatch:staged");state.staged=r&&r.value?JSON.parse(r.value):{};}catch(e){state.staged={};}
+  try{const r=await store.get("vandispatch:vanmap");state.vanmap=r&&r.value?JSON.parse(r.value):{};}catch(e){state.vanmap={};}
+  try{const r=await store.get("vandispatch:manual");state.manual=r&&r.value?JSON.parse(r.value):{};}catch(e){state.manual={};}
+  try{const r=await store.get("vandispatch:extra");state.extra=r&&r.value?JSON.parse(r.value):{};}catch(e){state.extra={};}
+  try{const r=await store.get("vandispatch:shownums");state.showNums=r&&r.value!=null?JSON.parse(r.value):true;}catch(e){state.showNums=true;}
+  // merge any staged counts stored under old location codes into canonical names
+  let mig=false;
+  for(const dow of Object.keys(state.staged)){
+    const old=state.staged[dow],neu={};
+    for(const k of Object.keys(old)){const c=canon(k);neu[c]=(neu[c]||0)+old[k];if(c!==k)mig=true;}
+    state.staged[dow]=neu;
+  }
+  if(mig)try{await saveStaged();}catch(e){}
+  for(let i=1;i<=state.fleetCount;i++){if(!state.fleet[i])state.fleet[i]={status:"available",last:"",next:"",odo:"",notes:"",history:[]};if(!state.fleet[i].history)state.fleet[i].history=[];}
+}
+async function saveFleet(){try{await store.set("vandispatch:fleet",JSON.stringify(state.fleet),false);}catch(e){}}
+async function saveCount(){try{await store.set("vandispatch:fleetcount",JSON.stringify(state.fleetCount),false);}catch(e){}}
+async function saveStaged(){try{await store.set("vandispatch:staged",JSON.stringify(state.staged),false);}catch(e){}}
+async function saveVanmap(){try{await store.set("vandispatch:vanmap",JSON.stringify(state.vanmap),false);}catch(e){}}
+async function saveJobs(){try{await store.set("vandispatch:jobs",JSON.stringify(JOBS),false);await store.set("vandispatch:jobsver",JSON.stringify(JOBSVER),false);}catch(e){}}
+async function saveManual(){try{await store.set("vandispatch:manual",JSON.stringify(state.manual),false);}catch(e){}}
+async function saveExtra(){try{await store.set("vandispatch:extra",JSON.stringify(state.extra),false);}catch(e){}}
+function manualFor(dow){return state.manual[dow]||[];}
+function addManual(mv){if(!state.manual[curDow])state.manual[curDow]=[];state.manual[curDow].push(mv);saveManual();}
+function delManual(id){state.manual[curDow]=manualFor(curDow).filter(m=>m.id!==id);saveManual();renderAll();}
+
+/* ---- job-package import flow ---- */
+let pendingJobs=null;
+function openUpd(){pendingJobs=null;$("updFile").value="";$("updStatus").innerHTML="";$("updPreview").innerHTML="";$("updApply").disabled=true;$("updModalBg").classList.add("on");}
+function closeUpd(){$("updModalBg").classList.remove("on");}
+async function runImport(file){
+  const st=$("updStatus");$("updApply").disabled=true;$("updPreview").innerHTML="";
+  try{
+    let text;
+    if(/\.pdf$/i.test(file.name)){
+      st.innerHTML='Reading PDF\u2026 <span id="updPg"></span>';
+      text=await pdfToText(file,(p,n)=>{const e=$("updPg");if(e)e.textContent=`page ${p} of ${n}`;});
+    }else{st.textContent="Reading file\u2026";text=await file.text();}
+    st.textContent="Parsing job package\u2026";
+    const parsed=parseJobs(text);
+    if(!parsed.length){st.innerHTML='<span style="color:var(--red)">No jobs found. Make sure this is the job-book PDF (it should contain \u201cJob no.:\u201d and \u201cValid from:\u201d lines).</span>';return;}
+    pendingJobs=parsed;
+    st.innerHTML=`<span style="color:var(--green)">Parsed OK.</span> Review below, then Apply.`;
+    buildUpdPreview(parsed);
+    $("updApply").disabled=false;
+  }catch(err){st.innerHTML=`<span style="color:var(--red)">Couldn\u2019t read this file: ${(err&&err.message)||err}</span>`;}
+}
+function buildUpdPreview(parsed){
+  const dist={};parsed.forEach(j=>dist[j.days]=(dist[j.days]||0)+1);
+  const moves=parsed.reduce((s,j)=>s+j.moves.length,0);
+  const raw=new Set();parsed.forEach(j=>{if(j.onduty)raw.add(j.onduty);j.moves.forEach(m=>{raw.add(m.from);raw.add(m.to);});});
+  const converted=[],canonSet=new Set();
+  [...raw].forEach(c=>{const k=canon(c);canonSet.add(k);if(k!==c)converted.push(c+" \u2192 "+k);});
+  const order=["Mon-Fri","Mon-Thu","Fri","Sat-Sun","Sat","Sun"];
+  const dline=order.filter(d=>dist[d]).map(d=>`${d}: ${dist[d]}`).join(" \u00b7 ");
+  $("updPreview").innerHTML=
+    `<div class="updrow"><b>${parsed.length}</b> job variants \u00b7 <b>${moves}</b> van moves</div>`+
+    `<div class="updrow muted">${dline}</div>`+
+    (converted.length?`<div class="seclbl">Auto-converted by your names (${converted.length})</div><div class="updcodes">${converted.sort().join("<br>")}</div>`:`<div class="muted small" style="margin-top:8px">No code conversions needed.</div>`)+
+    `<div class="seclbl">Locations after conversion (${canonSet.size})</div><div class="updcodes">${[...canonSet].sort().join(", ")}</div>`+
+    `<div class="muted small" style="margin-top:8px">Anything above that\u2019s still a short code can be renamed later \u2014 just tell me.</div>`;
+}
+async function applyImport(){
+  if(!pendingJobs)return;
+  JOBS=pendingJobs;rebuildLocs();
+  state.staged={};state.vanmap={};state.manual={};state.extra={};saveExtra();
+  await saveJobs();saveStaged();saveVanmap();saveManual();
+  pendingJobs=null;closeUpd();renderAll();flash("New job package loaded");
+}
+async function resetJobs(){
+  JOBS=BUILTIN_JOBS;rebuildLocs();state.staged={};state.vanmap={};state.manual={};state.extra={};saveExtra();
+  try{await store.delete("vandispatch:jobs");}catch(e){}
+  saveStaged();saveVanmap();saveManual();closeUpd();renderAll();flash("Restored the built-in job package");
+}
+/* per-day display relabel: the simulator works on internal van ids; the user can correct
+   which physical number is shown for a given id. Kept as a bijection over 1..fleetCount. */
+function dispVan(v){const mp=state.vanmap[curDow];return (mp&&mp[v]!=null)?mp[v]:v;}
+function vlabel(v){return state.showNums===false?"Van":"Van "+dispVan(v);}
+function actualForLabel(label){const mp=state.vanmap[curDow]||{};for(let v=1;v<=state.fleetCount;v++){const l=(mp[v]!=null)?mp[v]:v;if(l===label)return v;}return null;}
+function relabelVan(actual,newLabel){
+  state.vanmap[curDow]=state.vanmap[curDow]||{};const mp=state.vanmap[curDow];
+  const cur=(mp[actual]!=null)?mp[actual]:actual;if(newLabel===cur)return;
+  const w=actualForLabel(newLabel);
+  mp[actual]=newLabel;if(w!=null&&w!==actual)mp[w]=cur;
+  for(let v=1;v<=state.fleetCount;v++){if(mp[v]===v)delete mp[v];}
+  if(!Object.keys(mp).length)delete state.vanmap[curDow];
+  saveVanmap();
+}
+
+/* ---------- core ---------- */
+function patternRunsOn(p,d){const m={"Mon-Fri":[1,2,3,4,5],"Mon-Thu":[1,2,3,4],"Fri":[5],"Sat":[6],"Sun":[7],"Sat-Sun":[6,7],"Thu-Fri":[4,5],"Mon-Wed":[1,2,3],"Wed-Fri":[3,4,5],"Mon-Tue":[1,2]};return(m[p]||[]).includes(d);}
+function movesForDay(d){const o=[];JOBS.forEach(j=>{if(patternRunsOn(j.days,d)){const seen=new Set();j.moves.forEach(m=>{const cf=canon(m.from),ct=canon(m.to),k=cf+"|"+ct+"|"+m.sm+"|"+m.em;if(seen.has(k))return;seen.add(k);o.push(Object.assign({},m,{from:cf,to:ct,job:j.job,days:j.days}));});}});(state.extra[d]||[]).filter(e=>!e.type||e.type==="route").forEach(e=>o.push({id:e.id,from:canon(e.from),to:canon(e.to),sm:e.sm,em:e.em,start:hmm(e.sm),end:hmm(e.em),job:String(e.job),days:"",extra:true}));o.sort((a,b)=>a.sm-b.sm||String(a.job).localeCompare(String(b.job)));return o;}
+function hmm(min){min=((min%1440)+1440)%1440;return String(Math.floor(min/60)).padStart(2,"0")+":"+String(min%60).padStart(2,"0");}
+function toMin(t){const[h,m]=t.split(":").map(Number);return h*60+m;}
+function daysToNext(d){if(!d)return null;const t=new Date(d+"T00:00:00"),n=new Date();n.setHours(0,0,0,0);return Math.round((t-n)/86400000);}
+function availableVans(){const a=[];for(let i=1;i<=state.fleetCount;i++)if(state.fleet[i]&&state.fleet[i].status==="available")a.push(i);return a;}
+function oosCount(){let c=0;for(let i=1;i<=state.fleetCount;i++)if(state.fleet[i]&&state.fleet[i].status!=="available")c++;return c;}
+
+/* minimum vans that must START at each location so it never runs dry */
+function locNeeds(dow){
+  const moves=movesForDay(dow),locs=new Set();
+  moves.forEach(m=>{locs.add(m.from);locs.add(m.to);});
+  const need={};
+  locs.forEach(L=>{const ev=[];
+    moves.forEach(m=>{if(m.from===L)ev.push([m.sm,0,-1]);if(m.to===L)ev.push([m.em,1,1]);});
+    ev.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);let bal=0,mn=0;ev.forEach(e=>{bal+=e[2];if(bal<mn)mn=bal;});need[L]=Math.max(0,-mn);});
+  return need;
+}
+function stagedFor(dow){
+  if(!state.staged[dow]){const nd=locNeeds(dow);state.staged[dow]={};Object.keys(nd).forEach(L=>state.staged[dow][L]=nd[L]);}
+  return state.staged[dow];
+}
+
+/* ---------- the simulation: physically continuous van movement, max reuse ---------- */
+const DAYNAME=d=>(DOW.find(x=>x[1]===d)||["",d])[0];
+function endPositions(pool){const p={};for(const L in pool){const ids=pool[L].map(c=>c.van).filter(v=>v!=="NEED");if(ids.length)p[L]=ids.slice();}return p;}
+
+/* simulate ONE day. If carry is given ({L:[vanIds]}), vans start where they were
+   left; otherwise this is the week-start day and vans are placed per staged counts. */
+function simulateDay(dow,carry){
+  const moves=movesForDay(dow);
+  const need=locNeeds(dow),staged=stagedFor(dow),avail=availableVans(),availSet=new Set(avail);
+  const placed={},vanBase={};
+  if(carry){
+    for(const L in carry){placed[L]=placed[L]||[];carry[L].forEach(v=>{
+      if(availSet.has(v)){placed[L].push(v);vanBase[v]=L;}   // dropped if now out of service
+    });}
+  }else{
+    // place your available vans per the staged plan (busiest spots first); you only have so many
+    const fillOrder=Object.keys(staged).filter(L=>staged[L]>0).sort((a,b)=>(staged[b]-staged[a])||a.localeCompare(b));
+    let vi=0;
+    fillOrder.forEach(L=>{placed[L]=[];for(let k=0;k<staged[L]&&vi<avail.length;k++){const v=avail[vi++];placed[L].push(v);vanBase[v]=L;}});
+    // any leftover vans wait in reserve at the busiest location so they carry over too
+    if(vi<avail.length){const depot=fillOrder[0]||LOCS[0];placed[depot]=placed[depot]||[];
+      while(vi<avail.length){const v=avail[vi++];placed[depot].push(v);vanBase[v]=depot;}}
+  }
+  const requiredTotal=Object.values(need).reduce((s,x)=>s+x,0);
+  const placedTotal=Object.values(placed).reduce((s,a)=>s+a.length,0);
+  const pool={};Object.keys(placed).forEach(L=>pool[L]=placed[L].map(v=>({van:v,at:-1})));
+  const rank=v=>typeof v==="number"?v:1e9;
+  const assign={},trail={};avail.forEach(v=>trail[v]=[]);
+  let uncovered=0;const uncByLoc={};
+  // dispatcher's accepted ad-hoc moves: divert that specific van, then let scheduled trips re-flow
+  const manualMoves=manualFor(dow).filter(m=>availSet.has(m.van));
+  const events=moves.map(m=>({sm:m.sm,manual:false,m:m})).concat(manualMoves.map(m=>({sm:m.sm,manual:true,m:m})));
+  events.sort((a,b)=>a.sm-b.sm||((a.manual?0:1)-(b.manual?0:1)));
+  for(const ev of events){
+    const m=ev.m;
+    if(ev.manual){
+      // pull this exact van out of circulation (idle by sm), preferring its 'from'
+      let removed=false;const qf=pool[m.from];
+      if(qf){for(let i=0;i<qf.length;i++){if(qf[i].van===m.van&&qf[i].at<=m.sm){qf.splice(i,1);removed=true;break;}}}
+      if(!removed){for(const L in pool){const q=pool[L];for(let i=0;i<q.length;i++){if(q[i].van===m.van&&q[i].at<=m.sm){q.splice(i,1);removed=true;break;}}if(removed)break;}}
+      if(removed){   // only divert a van that was actually free; otherwise the move can't be honored
+        (pool[m.to]||(pool[m.to]=[])).push({van:m.van,at:m.em});
+        if(trail[m.van])trail[m.van].push({from:m.from,to:m.to,sm:m.sm,em:m.em,start:m.start,end:m.end,job:"ad-hoc"});
+      }
+      continue;
+    }
+    const q=pool[m.from]||(pool[m.from]=[]);
+    q.sort((a,b)=>a.at-b.at||rank(a.van)-rank(b.van));
+    let idx=-1;for(let i=0;i<q.length;i++){if(q[i].at<=m.sm){idx=i;break;}}
+    if(idx>=0){const c=q.splice(idx,1)[0];assign[m.id]=c.van;
+      if(typeof c.van==="number"&&trail[c.van])trail[c.van].push(m);
+      (pool[m.to]||(pool[m.to]=[])).push({van:c.van,at:m.em});
+    }else{assign[m.id]="NEED";uncovered++;uncByLoc[m.from]=(uncByLoc[m.from]||0)+1;
+      (pool[m.to]||(pool[m.to]=[])).push({van:"NEED",at:m.em});}
+  }
+  const used=new Set(Object.values(assign).filter(v=>typeof v==="number"));
+  const covered=moves.length-uncovered;
+  return {dow,moves,manualMoves,assign,trail,vanBase,placed,need,staged,avail,placedTotal,requiredTotal,covered,uncovered,uncByLoc,used,endPos:endPositions(pool)};
+}
+
+/* Each day is covered with maximum van reuse: a van that drops a crew is immediately
+   available for the next trip leaving that spot. The schedule is built so vans finish
+   the night positioned for the next morning, so each day is modelled on its own. */
+function simulate(targetDow){const s=simulateDay(targetDow,null);s.carriedFrom=null;return s;}
+function countAtSim(sim,L,t){let c=sim.placed[L]?sim.placed[L].length:0;sim.moves.forEach(m=>{if(m.from===L&&m.sm<=t)c--;if(m.to===L&&m.em<=t)c++;});(sim.manualMoves||[]).forEach(m=>{if(m.from===L&&m.sm<=t)c--;if(m.to===L&&m.em<=t)c++;});return c;}
+function inTransit(sim,t){return sim.moves.filter(m=>m.sm<=t&&m.em>t).length;}
+function serviceSpan(dow){const ms=movesForDay(dow);if(!ms.length)return[300,1380];let lo=1e9,hi=-1e9;ms.forEach(m=>{lo=Math.min(lo,m.sm);hi=Math.max(hi,m.em);});return[Math.floor(lo/5)*5,Math.ceil(hi/5)*5];}
+/* where is a given real van at time t */
+function vanLocAt(sim,v,t){
+  let loc=(v in sim.vanBase)?sim.vanBase[v]:null;
+  const tr=sim.trail[v]||[];
+  for(const m of tr){if(t<m.sm)return loc;if(t<m.em)return "\u2192transit";loc=m.to;}
+  return loc;
+}
+
+/* ---------- render ---------- */
+const $=id=>document.getElementById(id);
+function flash(msg){const f=$("flash");f.textContent=msg;f.classList.add("on");setTimeout(()=>f.classList.remove("on"),2200);}
+function renderDaysel(){$("daysel").innerHTML=DOW.map(([n,d])=>`<button data-d="${d}" class="${d===curDow?'on':''}">${n}</button>`).join("");}
+
+function renderStats(sim){
+  const cards=[
+    ["info",sim.moves.length,"Van moves"],
+    ["warn",sim.requiredTotal,"Vans needed"],
+    [sim.uncovered?"warn":"ok",sim.covered,"Trips covered"],
+    [sim.uncovered?"bad":"ok",sim.uncovered,"Trips short"],
+    [oosCount()?"warn":"ok",oosCount(),"Out of svc"]
+  ];
+  $("stats").innerHTML=cards.map(([cl,n,l])=>`<div class="stat ${cl}"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+}
+
+function renderSched(sim){
+  const moves=sim.moves;
+  const kind=v=>typeof v==="number"?"num":"need";
+  let rows=moves.map(m=>{const v=sim.assign[m.id];return {sm:m.sm,em:m.em,start:m.start,end:m.end,job:m.job,days:m.days,from:m.from,to:m.to,van:v,k:kind(v),extra:m.extra,eid:m.id};});
+  manualFor(curDow).forEach(m=>rows.push({sm:m.sm,em:m.em,start:m.start,end:m.end,job:"ad-hoc",days:"",from:m.from,to:m.to,van:m.van,k:"manual",mid:m.id,retBy:m.retBy}));
+  (state.extra[curDow]||[]).filter(e=>e.type&&e.type!=="route").forEach(e=>rows.push({sm:e.sm,em:e.em,start:hmm(e.sm),end:hmm(e.em),job:String(e.job),days:"",van:null,k:"standing",type:e.type,eid:e.id,extra:true}));
+  const usedVans=[...sim.used].sort((a,b)=>dispVan(a)-dispVan(b));
+  const hasNeed=rows.some(r=>r.k==="need");
+  const cur=vanFilter;
+  $("vanFilter").innerHTML=`<option value="">All vans</option>`+
+    usedVans.map(v=>`<option value="${v}" ${cur==v?"selected":""}>Van ${dispVan(v)}</option>`).join("")+
+    (hasNeed?`<option value="NEED" ${cur==="NEED"?"selected":""}>Where a van is needed</option>`:"");
+  if(vanFilter==="NEED")rows=rows.filter(r=>r.k==="need");
+  else if(vanFilter)rows=rows.filter(r=>String(r.van)===String(vanFilter));
+  const vrank=r=>(r.k==="num"||r.k==="manual")?dispVan(r.van):1e9;
+  const keyf={start:r=>r.sm,end:r=>r.em,job:r=>r.job,route:r=>r.from+"|"+r.to,
+    van:vrank,status:r=>r.k==="num"?0:1}[schedSort.key]||(r=>r.sm);
+  rows.sort((a,b)=>{const x=keyf(a),y=keyf(b);if(x<y)return -schedSort.dir;if(x>y)return schedSort.dir;return a.sm-b.sm;});
+  document.querySelectorAll("#schedTbl th.sortable").forEach(th=>{
+    const on=th.dataset.sort===schedSort.key;th.classList.toggle("active",on);
+    const base=th.textContent.replace(/[\u25b2\u25bc]\s*$/,"").trim();
+    th.innerHTML=base+(on?` <span class="ind">${schedSort.dir>0?"\u25b2":"\u25bc"}</span>`:"");
+  });
+  $("schedEmpty").style.display=rows.length?"none":"block";
+  $("schedTbl").style.display=(rows.length||moves.length)?"":"none";
+  $("schedHint").textContent=(rows.length||moves.length)?(rows.length+(vanFilter?" of "+moves.length:"")+" moves \u00b7 "+DAYNAME(curDow)+(sim.uncovered?" \u00b7 "+sim.uncovered+" need a van":" \u00b7 all covered")):"";
+  fillExtraLocs();$("exDay").textContent=DAYNAME(curDow);
+  const TYPELBL={hotel:"HOTEL",dob:"DOB VAN",shuttle:"SHUTTLE VAN"};
+  $("schedBody").innerHTML=rows.map(r=>{
+    let vanCell,stat,cls="";
+    if(r.k==="num"){vanCell=`<span class="vanno vedit" data-v="${r.van}" data-l="${r.from}">${vlabel(r.van)}</span>`;stat=`<span class="pill ok">OK</span>`;}
+    else if(r.k==="manual"){vanCell=`<span class="vanno vedit" data-v="${r.van}" data-l="${r.from}">${vlabel(r.van)}</span>`;stat=`<span class="pill disp">DISPATCH</span>`+(r.retBy!=null?`<div class="badtext" style="color:var(--amber)">return by ${hmm(r.retBy)}</div>`:"");cls="rowman";}
+    else if(r.k==="standing"){vanCell=`<span class="muted">&mdash;</span>`;stat=`<span class="pill standing">STANDING</span>`;cls="rowextra";}
+    else{vanCell=`<span class="pill bad">VAN NEEDED</span>`;stat=`<span class="pill bad">NEEDED</span><div class="badtext">No van at ${r.from} at ${r.start}</div>`;cls="rowbad";}
+    if(r.extra){if(r.k!=="standing")cls+=" rowextra";stat+=`<button class="xbtn" data-eid="${r.eid}" title="Delete this job">&times;</button>`;}
+    const jobCell=r.extra?`${r.job}<span class="addedtag">added</span>`:`${r.job}<span class="daystrip">${r.days}</span>`;
+    const routeCell=r.k==="standing"?`<span class="typebadge">${TYPELBL[r.type]||r.type}</span>`:`<span class="loc">${r.from}</span><span class="arrow">&rarr;</span><span class="loc">${r.to}</span>`;
+    return `<tr class="${cls}">
+      <td class="tnum">${r.start}</td>
+      <td>${jobCell}</td>
+      <td>${routeCell}</td>
+      <td class="muted">${r.end}</td>
+      <td>${vanCell}</td>
+      <td>${stat}</td></tr>`;
+  }).join("");
+  $("schedBody").querySelectorAll(".vedit").forEach(s=>s.onclick=()=>openVm(Number(s.dataset.v),s.dataset.l));
+  $("schedBody").querySelectorAll(".xbtn").forEach(b=>b.onclick=()=>removeExtra(b.dataset.eid));
+}
+
+function renderFleet(sim){
+  $("fleetCountInput").value=state.fleetCount;
+  let h="";
+  for(let i=1;i<=state.fleetCount;i++){
+    const f=state.fleet[i];const d=daysToNext(f.next);
+    let due="",dc="";
+    if(f.next){if(d<0){due="overdue "+(-d)+"d";dc="over";}else if(d<=14){due="due in "+d+"d";dc="soon";}else{due="due "+f.next;}}else due="no service date";
+    const tflag=f.tires==="on"?' <span class="tflag" title="Winter tires on">&#10052;</span>':"";
+    const sflag=f.next?(d<0?' <span class="sflag over" title="Service overdue">&#9881;</span>':(d<=14?' <span class="sflag soon" title="Service due soon">&#9881;</span>':"")):"";
+    const rflag=f.status==="repair"?' <span class="rflag" title="In for repairs">&#128295;</span>':"";
+    const base=(i in sim.vanBase)?sim.vanBase[i]:(f.status==="available"?"spare":"\u2014");
+    h+=`<div class="van-card ${f.status}" data-v="${i}">
+      <div class="dot"></div><div class="vn">${i}${tflag}${sflag}${rflag}</div>
+      <div class="vs">${f.status}</div>
+      <div class="base">@ ${base}</div>
+      <div class="due ${dc}">${due}</div></div>`;
+  }
+  $("fleetGrid").innerHTML=h;
+  $("fleetGrid").querySelectorAll(".van-card").forEach(c=>c.onclick=()=>openVan(Number(c.dataset.v)));
+}
+
+function renderMaint(){
+  const rows=[];for(let i=1;i<=state.fleetCount;i++)rows.push([i,state.fleet[i]]);
+  rows.sort((a,b)=>{const da=daysToNext(a[1].next),db=daysToNext(b[1].next);if(da==null)return 1;if(db==null)return -1;return da-db;});
+  $("maintBody").innerHTML=rows.map(([i,f])=>{
+    const d=daysToNext(f.next);let cls="",lbl=f.next||"\u2014";
+    if(f.next&&d<0){cls="badtext";lbl=f.next+" (overdue "+(-d)+"d)";}else if(f.next&&d<=14){cls="warntext";lbl=f.next+" (in "+d+"d)";}
+    const sp={available:"ok",service:"repo",repair:"bad"}[f.status];
+    return `<tr data-v="${i}" style="cursor:pointer">
+      <td class="tnum">Van ${i}</td><td><span class="pill ${sp}">${f.status}</span></td>
+      <td class="muted">${f.last||"\u2014"}</td><td class="${cls}">${lbl}</td>
+      <td class="muted">${f.odo?Number(f.odo).toLocaleString()+" km":"\u2014"}</td><td class="muted">${(f.history&&f.history.length)?f.history.length+" record"+(f.history.length>1?"s":""):"\u2014"}</td><td class="muted">${f.notes||""}</td></tr>`;
+  }).join("");
+  $("maintBody").querySelectorAll("tr").forEach(r=>r.onclick=()=>openVan(Number(r.dataset.v)));
+}
+
+function renderLocs(sim){
+  const dow=curDow,[lo,hi]=serviceSpan(dow),sl=$("locTime");
+  sl.min=lo;sl.max=hi;
+  if(!locInited||+sl.value<lo||+sl.value>hi){const n=new Date(),nm=n.getHours()*60+n.getMinutes();sl.value=Math.min(hi,Math.max(lo,nm));locInited=true;}
+  refreshLoc(sim);
+}
+function refreshLoc(sim){
+  sim=sim||simulate(curDow);
+  const dow=curDow,need=sim.need;
+  const keys=Object.keys(need).sort((a,b)=>need[b]-need[a]||a.localeCompare(b));
+  if(!keys.length){$("locGrid").innerHTML='<div class="muted" style="padding:20px">No van moves this day.</div>';$("locBanner").innerHTML="No moves scheduled.";$("locPlan").innerHTML="";return;}
+  const t=+$("locTime").value;$("locTimeOut").textContent=hmm(t);
+  const it=inTransit(sim,t);$("locTransit").textContent=it+" van"+(it===1?"":"s")+" in transit";
+  const start=L=>sim.placed[L]?sim.placed[L].length:0;
+  const avail=sim.avail.length;
+  const reuse=sim.used.size?(sim.moves.length/sim.used.size):0;
+  const b=$("locBanner");b.classList.toggle("short",sim.uncovered>0);
+  b.innerHTML=`With each van reused as much as possible, ${DAYNAME(dow)} needs <span class="big">${sim.requiredTotal}</span> vans to cover ${sim.moves.length} trips`+
+    (sim.used.size?` (about ${reuse.toFixed(1)} trips per van)`:"")+`. You have <b>${avail}</b> available${oosCount()?" ("+oosCount()+" out of service)":""}. `+
+    (sim.uncovered>0?`<span style="color:var(--red)"><b>${sim.uncovered}</b> trip${sim.uncovered>1?"s":""} have no van &mdash; add vans where the cards are red.</span>`
+                    :`<span style="color:var(--green)">Every crew has a van.</span>`)+
+    `<br><span class="muted">Park these vans at the start of ${DAYNAME(dow)}; the schedule keeps each one moving and leaves it set for the next job. No overnight repositioning.</span>`;
+  const pos=keys.filter(L=>need[L]>0);
+  $("locPlan").innerHTML=`<div class="planhead">Vans to start ${DAYNAME(dow)} with (maximum reuse)</div>`+
+    (pos.length?`<div class="plangrid">`+pos.map(L=>`<span class="planitem"><b>${need[L]}</b>${L}</span>`).join("")+`</div>`:`<div class="muted small">No vans need pre-positioning.</div>`)+
+    `<div class="plantot">Total: <b style="color:var(--ink)">${sim.requiredTotal}</b> vans cover the day&rsquo;s ${sim.moves.length} trips. Adjust any spot with &minus;/&#43;.</div>`;
+  $("locGrid").innerHTML=keys.map(L=>{
+    const c=countAtSim(sim,L,t),cls=c<0?"neg":(c===0?"zero":"pos"),card=c<0?"dry":(c===0?"tight":"");
+    const unc=sim.uncByLoc[L]?`<div class="lr" style="color:var(--red)">short here: ${sim.uncByLoc[L]}</div>`:"";
+    return `<div class="loc-card ${card}"><div class="lc">${L}</div>
+      <div class="lr">need <b>${need[L]}</b> to start</div>${unc}
+      <div class="stepper"><button data-l="${L}" data-d="-1">&minus;</button>
+        <div><div class="sv">${start(L)}</div><div class="sl">parked</div></div>
+        <button data-l="${L}" data-d="1">&#43;</button></div>
+      <div class="atnow">at ${hmm(t)}: <span class="cnt ${cls}">${c}</span> here</div></div>`;
+  }).join("");
+  $("locGrid").querySelectorAll(".stepper button").forEach(btn=>btn.onclick=()=>{
+    const L=btn.dataset.l,d=+btn.dataset.d,st=stagedFor(curDow);st[L]=Math.max(0,(st[L]||0)+d);saveStaged();renderAll();
+  });
+}
+
+/* ---------- positions: live board + where each numbered van is ---------- */
+function nowMin(){const n=new Date();return n.getHours()*60+n.getMinutes();}
+function realDow(){const d=new Date().getDay();return d===0?7:d;}
+function renderPos(){const sl=$("posTime");sl.min=0;sl.max=1440;if(!posInited){posFollow=true;posInited=true;}if(posFollow)sl.value=nowMin();refreshPos();}
+function refreshPos(){
+  const dow=curDow,sim=simulate(dow),t=+$("posTime").value,live=(dow===realDow());
+  $("posTimeOut").textContent=hmm(t);
+  $("posDay").textContent=DAYNAME(dow)+(live&&posFollow?" \u00b7 now":"");
+  const idle={};let idleCount=0,transit=0;
+  for(let v=1;v<=state.fleetCount;v++){if(!state.fleet[v]||state.fleet[v].status!=="available")continue;const loc=vanLocAt(sim,v,t);if(loc==="\u2192transit")transit++;else if(loc){(idle[loc]=idle[loc]||[]).push(v);idleCount++;}}
+  const arr={};
+  sim.moves.forEach(m=>{const v=sim.assign[m.id];if(typeof v==="number"&&m.em>t)(arr[m.to]=arr[m.to]||[]).push({v:v,from:m.from,em:m.em,job:m.job});});
+  manualFor(dow).forEach(m=>{if(m.em>t)(arr[m.to]=arr[m.to]||[]).push({v:m.van,from:m.from,em:m.em,job:null});});
+  const deps=[];
+  sim.moves.forEach(m=>{if(m.sm>=t&&m.sm<=t+60)deps.push({sm:m.sm,from:m.from,to:m.to,van:sim.assign[m.id],manual:false,job:m.job});});
+  manualFor(dow).forEach(m=>{if(m.sm>=t&&m.sm<=t+60)deps.push({sm:m.sm,from:m.from,to:m.to,van:m.van,manual:true,job:null});});
+  deps.sort((a,b)=>a.sm-b.sm);
+  $("posStat").innerHTML=`<b>${idleCount}</b> idle &middot; <b>${transit}</b> in transit &middot; <b>${deps.length}</b> leaving within the hour`;
+  // returns due (countdown vs real clock when viewing today)
+  const rn=nowMin();
+  const due=manualFor(dow).filter(m=>m.retBy!=null).map(m=>{const target=m.retDay==="next"?m.retBy+1440:m.retBy;return {m:m,diff:target-rn};}).sort((a,b)=>a.diff-b.diff);
+  const fmt=mn=>{const a=Math.abs(mn),h=Math.floor(a/60),mm=a%60;return (h?h+"h ":"")+mm+"m";};
+  if(due.length){const anyOver=live&&due.some(d=>d.diff<0);
+    $("posReturns").innerHTML=`<div class="countbox${anyOver?" over":""}"><div class="rethdr">&#9201; Returns due</div>`+
+      due.map(d=>{const over=live&&d.diff<0;const when=live?(over?`OVERDUE by ${fmt(d.diff)}`:`in ${fmt(d.diff)}`):`by ${hmm(d.m.retBy)}`;
+        return `<div class="countline"><span>Get a van back to <b>${d.m.retLoc}</b> by ${hmm(d.m.retBy)}${d.m.retDay==="next"?" (tomorrow)":""} &mdash; covers ${vlabel(d.m.van)}</span><span class="countdown${over?" over":""}">${when}</span></div>`;}).join("")+`</div>`;
+  }else $("posReturns").innerHTML="";
+  $("posDepart").innerHTML=deps.length?deps.map(d=>{const mins=d.sm-t;const vn=(typeof d.van==="number")?`<span class="vn2 vedit" data-v="${d.van}" data-l="${d.from}">${vlabel(d.van)}</span>`:`<span class="vn2 need">VAN NEEDED</span>`;
+    return `<div class="nowdep ${mins<=15?"soon":""} ${d.manual?"disp":""}"><span class="t">${hmm(d.sm)}</span>${vn}<span>${d.from} &rarr; ${d.to}</span><span class="jobno">${d.job?"Job "+d.job:"dispatch"}</span><span class="rt">in ${mins}m</span></div>`;}).join(""):`<div class="muted small">Nothing departs in the next hour from ${hmm(t)}.</div>`;
+  // on the road now: each travelling van rides a start->finish line
+  const moving=[];
+  sim.moves.forEach(m=>{const v=sim.assign[m.id];if(typeof v==="number"&&m.sm<=t&&t<m.em)moving.push({van:v,from:m.from,to:m.to,sm:m.sm,em:m.em,manual:false,job:m.job});});
+  manualFor(dow).forEach(m=>{if(m.sm<=t&&t<m.em)moving.push({van:m.van,from:m.from,to:m.to,sm:m.sm,em:m.em,manual:true,job:null});});
+  moving.sort((a,b)=>a.em-b.em);
+  $("posTransitList").innerHTML=moving.length?moving.map(m=>{
+    const span=Math.max(1,m.em-m.sm),pct=Math.max(0,Math.min(100,(t-m.sm)/span*100)),remain=m.em-t;
+    return `<div class="transit-row ${m.manual?"disp":""}">
+      <div class="tr-head"><span class="vn2 vedit" data-v="${m.van}" data-l="${m.from}">${vlabel(m.van)}</span><span class="tr-route">${m.from} &rarr; ${m.to}</span><span class="jobno">${m.job?"Job "+m.job:"dispatch"}</span><span class="tr-eta">arrives ${hmm(m.em)} &middot; ${remain}m</span></div>
+      <div class="tr-track"><span class="tr-time">${hmm(m.sm)}</span>
+        <div class="tr-line"><div class="tr-prog" style="width:${pct}%"></div><div class="tr-van" style="left:${pct}%">&#128656;</div></div>
+        <span class="tr-time e">${hmm(m.em)}</span></div>
+    </div>`;
+  }).join(""):`<div class="muted small">No vans on the road at ${hmm(t)}.</div>`;
+  const keys=[...new Set([...Object.keys(idle),...Object.keys(arr)])].sort((a,b)=>(idle[b]?idle[b].length:0)-(idle[a]?idle[a].length:0)||a.localeCompare(b));
+  $("posGrid").innerHTML=keys.length?keys.map(L=>{
+    const hv=(idle[L]||[]).slice().sort((a,b)=>dispVan(a)-dispVan(b));
+    const av=(arr[L]||[]).slice().sort((a,b)=>a.em-b.em);
+    const chips=hv.length?hv.map(v=>`<span class="vchip" data-v="${v}">${vlabel(v)}</span>`).join(""):`<span class="muted small">none here</span>`;
+    const arrows=av.length?`<div class="seclbl">Arriving</div>`+av.map(a=>`<div class="arr"><span class="van">${vlabel(a.v)}</span> from ${a.from} &middot; <span class="at">${hmm(a.em)}</span>${a.job?` &middot; <span class="jobno">Job ${a.job}</span>`:""}</div>`).join(""):"";
+    return `<div class="pos-card"><div class="lc">${L}</div><div class="seclbl">Here at ${hmm(t)} (${hv.length})</div><div>${chips}</div>${arrows}</div>`;
+  }).join(""):`<div class="muted" style="padding:16px">No vans positioned at ${hmm(t)}.</div>`;
+  $("posGrid").querySelectorAll(".vchip").forEach(c=>c.onclick=()=>openVm(Number(c.dataset.v),c.closest(".pos-card").querySelector(".lc").textContent));
+  document.querySelectorAll("#posDepart .vedit, #posTransitList .vedit").forEach(s=>s.onclick=()=>openVm(Number(s.dataset.v),s.dataset.l));
+}
+function openVm(actual,loc){editPosVan=actual;$("vmTitle").textContent="Van "+dispVan(actual);
+  $("vmWhere").innerHTML=`Planned van${loc?` at <b>${loc}</b>`:""} on ${DAYNAME(curDow)}. If the crew took a different van, enter its number &mdash; it swaps the two everywhere for the day.`;
+  $("vmNum").value=dispVan(actual);$("vmodalBg").classList.add("on");setTimeout(()=>$("vmNum").focus(),50);
+}
+function closeVm(){$("vmodalBg").classList.remove("on");editPosVan=null;}
+function vmSave(){
+  if(editPosVan==null)return;
+  let n=parseInt($("vmNum").value,10);
+  if(isNaN(n)||n<1||n>state.fleetCount){flash("Enter a van number between 1 and "+state.fleetCount);return;}
+  relabelVan(editPosVan,n);closeVm();renderAll();flash("Updated to Van "+n);
+}
+
+/* ---------- dispatch ---------- */
+/* ---------- home: what needs attention ---------- */
+function renderHome(){refreshHome();}
+function refreshHome(){
+  const dow=realDow(),t=nowMin(),sim=simulate(dow);
+  $("homeClock").textContent=hmm(t);$("homeDay").textContent=DAYNAME(dow);
+  const fmt=mn=>{const a=Math.abs(mn),h=Math.floor(a/60),mm=a%60;return (h?h+"h ":"")+mm+"m";};
+  const needs=[];
+  sim.moves.forEach(m=>{if(sim.assign[m.id]==="NEED")needs.push({from:m.from,to:m.to,sm:m.sm,job:m.job});});
+  needs.sort((a,b)=>a.sm-b.sm);
+  const due=manualFor(dow).filter(m=>m.retBy!=null).map(m=>{const target=m.retDay==="next"?m.retBy+1440:m.retBy;return {m:m,diff:target-t};}).sort((a,b)=>a.diff-b.diff);
+  const oos=[];for(let v=1;v<=state.fleetCount;v++){const f=state.fleet[v];if(f&&f.status&&f.status!=="available")oos.push({v:v,status:f.status});}
+  const svc=[];for(let v=1;v<=state.fleetCount;v++){const f=state.fleet[v];if(f&&f.next){const dd=daysToNext(f.next);if(dd<=14)svc.push({v:v,dd:dd,next:f.next});}}
+  svc.sort((a,b)=>a.dd-b.dd);
+  const svcOver=svc.some(s=>s.dd<0);
+  const bits=[];if(needs.length)bits.push(`<b>${needs.length}</b> van${needs.length===1?"":"s"} needed`);if(due.length)bits.push(`<b>${due.length}</b> return${due.length===1?"":"s"} due`);if(svc.length)bits.push(`<b>${svc.length}</b> service due`);if(oos.length)bits.push(`<b>${oos.length}</b> out of service`);
+  $("homeStat").innerHTML=bits.length?bits.join(" &middot; "):"Nothing needs attention right now";
+  let html="";
+  if(needs.length){
+    html+=`<div class="alertbox red"><div class="albl">&#9888; Van needed (${needs.length})</div>`+
+      needs.map(n=>{const over=n.sm<=t,soon=n.sm-t<=60&&n.sm>t;const when=over?(n.sm<t?`OVERDUE ${fmt(n.sm-t)}`:"NOW"):(soon?`in ${fmt(n.sm-t)}`:`by ${hmm(n.sm)}`);
+        return `<div class="alline"><span>Van must be at <b>${n.from}</b> by <b>${hmm(n.sm)}</b> &mdash; Job ${n.job}, ${n.from}&rarr;${n.to}</span><span class="alwhen ${over?"over":""}">${when}</span></div>`;}).join("")+`</div>`;
+  }
+  if(due.length){
+    html+=`<div class="alertbox amber"><div class="albl">&#9201; Returns due (${due.length})</div>`+
+      due.map(d=>{const over=d.diff<0,when=over?`OVERDUE ${fmt(d.diff)}`:`in ${fmt(d.diff)}`;
+        return `<div class="alline"><span>Get a van back to <b>${d.m.retLoc}</b> by <b>${hmm(d.m.retBy)}</b>${d.m.retDay==="next"?" (tomorrow)":""} &mdash; covers ${vlabel(d.m.van)} sent to ${d.m.to}</span><span class="alwhen ${over?"over":""}">${when}</span></div>`;}).join("")+`</div>`;
+  }
+  if(svc.length){
+    html+=`<div class="alertbox ${svcOver?"red":"amber"}"><div class="albl">&#9881; Service due (${svc.length})</div>`+
+      svc.map(s=>{const over=s.dd<0,when=over?`OVERDUE ${-s.dd}d`:(s.dd===0?"TODAY":`in ${s.dd}d`);
+        return `<div class="alline"><span>${vlabel(s.v)} service ${over?"overdue":"due"} &mdash; ${s.next}</span><span class="alwhen ${over?"over":""}">${when}</span></div>`;}).join("")+`</div>`;
+  }
+  if(!needs.length&&!due.length&&!svcOver){
+    html+=`<div class="allclear"><div class="ac-ic">&#10003;</div><div><b>All clear.</b> Every crew today has a van on time.</div></div>`;
+  }
+  if(oos.length){
+    html+=`<div class="alertbox grey"><div class="albl">&#128295; Out of service (${oos.length})</div><div class="alline"><span>${oos.map(o=>vlabel(o.v)+" &middot; "+o.status).join("&nbsp;&nbsp; ")}</span></div></div>`;
+  }
+  $("homeAlerts").innerHTML=html;
+}
+/* ---------- extra (manually added) jobs ---------- */
+function fillExtraLocs(){const sel=$("exFrom");if(!sel)return;const sig=LOCS.slice().sort().join("|");if(sel.dataset.sig===sig)return;sel.dataset.sig=sig;const opts=`<option value="">&mdash;</option>`+LOCS.slice().sort().map(L=>`<option>${L}</option>`).join("");sel.innerHTML=opts;$("exTo").innerHTML=opts;}
+function addExtra(){
+  const type=$("exType").value;
+  const job=($("exJob").value||"").trim()||"EXTRA";
+  const st=$("exStart").value,en=$("exEnd").value;
+  if(!st||!en){$("exErr").textContent="Enter a start and end time.";return;}
+  const sm=toMin(st),em=toMin(en);
+  if(em<=sm){$("exErr").textContent="End time must be after start time.";return;}
+  const entry={id:"x"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),job:job,type:type,sm:sm,em:em};
+  if(type==="route"){
+    const from=$("exFrom").value,to=$("exTo").value;
+    if(!from||!to){$("exErr").textContent="Choose a from and to location.";return;}
+    if(from===to){$("exErr").textContent="From and to must be different.";return;}
+    entry.from=from;entry.to=to;
+  }
+  (state.extra[curDow]=state.extra[curDow]||[]).push(entry);
+  saveExtra();
+  $("exJob").value="";$("exStart").value="";$("exEnd").value="";$("exErr").textContent="";$("exForm").style.display="none";
+  renderAll();
+}
+function removeExtra(eid){for(const d in state.extra){const a=state.extra[d]||[];const i=a.findIndex(e=>e.id===eid);if(i>=0){a.splice(i,1);if(!a.length)delete state.extra[d];saveExtra();renderAll();return;}}}
+/* ---------- dispatch ---------- */
+function renderDispatch(){
+  const opt=arr=>arr.map(x=>`<option value="${x}">${x}</option>`).join("");
+  $("poolLoc").innerHTML=opt(LOCS);
+  $("spFrom").innerHTML=opt(LOCS);$("spTo").innerHTML=opt(LOCS);
+  renderMoves();
+}
+function originProfile(dow,L){
+  const sim=simulate(dow);
+  let c=sim.placed[L]?sim.placed[L].length:0,minc=c,fz=null;
+  const evs=[];sim.moves.forEach(m=>{if(m.from===L)evs.push([m.sm,-1]);if(m.to===L)evs.push([m.em,1]);});
+  (sim.manualMoves||[]).forEach(m=>{if(m.from===L)evs.push([m.sm,-1]);if(m.to===L)evs.push([m.em,1]);});
+  evs.sort((a,b)=>a[0]-b[0]);
+  for(const e of evs){c+=e[1];if(c<minc){minc=c;fz=e[0];}}
+  return {minc:minc,fz:fz,endCount:(sim.endPos[L]||[]).length};
+}
+function doSpare(){
+  const sim=simulate(curDow);
+  const from=$("spFrom").value,to=$("spTo").value,t=toMin($("spTime").value);
+  let em=toMin($("spDrop").value);if(em<=t)em+=1440;
+  const out=$("spOut");out.classList.remove("muted");
+  const day=DAYNAME(curDow);
+  if(from===to){out.innerHTML=`<span class="cond">Pick two different locations.</span>`;proposed=null;return;}
+  const parked=[];
+  for(let v=1;v<=state.fleetCount;v++){if(!state.fleet[v]||state.fleet[v].status!=="available")continue;if(vanLocAt(sim,v,t)===from)parked.push(v);}
+  const c0=parked.length;
+  const head=`<b>${from} &rarr; ${to} &middot; ${hmm(t)}&ndash;${hmm(em)} &middot; ${day}</b>`;
+  if(c0===0){out.innerHTML=`${head}<br><span class="nogo">No van is sitting at ${from} at ${hmm(t)}.</span> Taking one would leave a scheduled crew without a van.`;proposed=null;return;}
+  // 'from' van-count after t (today): find permanent surplus and first dry time
+  const evs=[];sim.moves.forEach(m=>{if(m.from===from&&m.sm>t)evs.push([m.sm,-1]);if(m.to===from&&m.em>t)evs.push([m.em,1]);});
+  (sim.manualMoves||[]).forEach(m=>{if(m.from===from&&m.sm>t)evs.push([m.sm,-1]);if(m.to===from&&m.em>t)evs.push([m.em,1]);});
+  evs.sort((a,b)=>a[0]-b[0]);
+  let c=c0,minc=c0,firstZero=null;
+  for(const e of evs){c+=e[1];if(c<minc)minc=c;if(c<=0&&firstZero===null)firstZero=e[0];}
+  const nextDep=v=>{const tr=sim.trail[v]||[];const d=tr.filter(m=>m.from===from&&m.sm>=t).map(m=>m.sm).sort((a,b)=>a-b);return d.length?d[0]:Infinity;};
+  parked.sort((a,b)=>nextDep(b)-nextDep(a));
+  const pickV=parked[0],pick=dispVan(pickV);
+  const extra=parked.length>1?` (${parked.length} are here)`:"";
+  // next-day permanence: if it stays at the destination, does 'from' still have enough tomorrow?
+  const nextDow=(curDow===7)?1:curDow+1;
+  const nextNeed=locNeeds(nextDow)[from]||0;
+  const endCountToday=(sim.endPos[from]||[]).length;
+  let retDay=null,retBy=null;
+  if(minc<1){retDay="today";retBy=firstZero;}
+  else if(endCountToday-1<nextNeed){retDay="next";retBy=originProfile(nextDow,from).fz;}
+  proposed={id:"x"+Date.now(),van:pickV,from:from,to:to,sm:t,em:em,start:hmm(t),end:hmm(em),retBy:retBy,retDay:retDay,retLoc:from};
+  let L=[head];
+  if(retDay===null){
+    L.push(`<span class="go">Take Van ${pick}.</span> ${from} has a van to spare${extra} and stays covered today.`);
+    L.push(`It can stay at <b>${to}</b> &mdash; ${from} won&rsquo;t run short today <b>or tomorrow</b>.`);
+  }else if(retDay==="today"){
+    L.push(`<span class="cond">You can take Van ${pick}${extra}, but ${from} needs a van back today.</span>`);
+    L.push(`Return a van to <b>${from}</b> by <b>${hmm(retBy)}</b> or it runs short. Any van back by then works.`);
+  }else{
+    L.push(`<span class="cond">OK to take Van ${pick}${extra} today, but don&rsquo;t leave it at ${to}.</span>`);
+    L.push(`${from} is fine today, but with this van gone it runs one short <b>tomorrow</b> around <b>${hmm(retBy)}</b>. Get a van back to ${from} before then.`);
+  }
+  L.push(`<button class="btn primary" id="spAccept" style="margin-top:8px">Accept &amp; add to schedule</button>`);
+  out.innerHTML=L.join("<br>");
+  const ab=$("spAccept");if(ab)ab.onclick=acceptSpare;
+}
+function acceptSpare(){
+  if(!proposed)return;
+  addManual(proposed);
+  const lbl=dispVan(proposed.van);
+  proposed=null;$("spOut").innerHTML=`<span class="go">Added.</span> See it on the Schedule and under Accepted dispatch moves.`;
+  renderAll();flash("Van "+lbl+" dispatch added");
+}
+function renderMoves(){
+  const list=manualFor(curDow).slice().sort((a,b)=>a.sm-b.sm);
+  const ml=$("moveList");
+  if(ml){
+    ml.innerHTML=list.length?list.map(m=>{
+      let ret;
+      if(m.retBy==null)ret=`<span class="okflag">can stay at ${m.to}</span>`;
+      else if(m.retDay==="next")ret=`<span class="retflag">don&rsquo;t leave it &mdash; ${m.retLoc} runs short tomorrow ~${hmm(m.retBy)}</span>`;
+      else ret=`<span class="retflag">return a van to ${m.retLoc} by ${hmm(m.retBy)}</span>`;
+      return `<div class="moveitem"><div><b>${vlabel(m.van)}</b> &middot; ${m.from} &rarr; ${m.to} &middot; ${m.start}&ndash;${m.end}<br>${ret}</div><button class="btn xbtn" data-id="${m.id}">&times;</button></div>`;
+    }).join(""):`<div class="muted small">No accepted moves yet. Find a spare van above and accept it.</div>`;
+    ml.querySelectorAll(".xbtn").forEach(b=>b.onclick=()=>delManual(b.dataset.id));
+  }
+  const rp=$("retPanel");
+  if(rp){
+    const due=list.filter(m=>m.retBy!=null).sort((a,b)=>(a.retDay==="next"?1:0)-(b.retDay==="next"?1:0)||a.retBy-b.retBy);
+    rp.innerHTML=due.length?`<div class="retbox"><div class="rethdr">&#9201; Returns due (${due.length})</div>`+
+      due.map(m=>{const when=m.retDay==="next"?`<b>tomorrow ~${hmm(m.retBy)}</b>`:`<b>${hmm(m.retBy)}</b>`;
+        return `<div class="retline"><span>Get a van back to <b>${m.retLoc}</b> by ${when} &mdash; covers ${vlabel(m.van)} sent to ${m.to}.</span><button class="btn xbtn" data-id="${m.id}" title="Mark done">&#10003;</button></div>`;}).join("")+`</div>`:"";
+    rp.querySelectorAll(".xbtn").forEach(b=>b.onclick=()=>delManual(b.dataset.id));
+  }
+}
+function doPool(){
+  const sim=simulate(curDow);
+  const L=$("poolLoc").value,t=toMin($("poolTime").value),out=$("poolOut");out.classList.remove("muted");
+  const here=[],spare=[];
+  for(let v=1;v<=state.fleetCount;v++){
+    if(!state.fleet[v]||state.fleet[v].status!=="available")continue;
+    const loc=vanLocAt(sim,v,t);
+    if(loc===L)here.push(v);else if(loc===null)spare.push(v);
+  }
+  const cnt=countAtSim(sim,L,t),need=sim.need[L]||0;
+  let h=`<b>${L} @ ${hmm(t)} \u00b7 ${DOW.find(d=>d[1]===curDow)[0]}</b><br>`;
+  h+=`Vans on hand: <span class="cnt ${cnt<0?'neg':(cnt===0?'zero':'pos')}" style="font-size:15px">${cnt}</span> (peak need here today: ${need}).<br>`;
+  h+=here.length?`<span class="go">Parked here & free:</span> ${here.map(v=>vlabel(v)).join(", ")}`:`<span class="nogo">No fleet van parked at ${L} at this time.</span>`;
+  if(cnt<0)h+=`<br><span class="nogo">Short by ${-cnt} &mdash; a van is needed here.</span>`;
+  if(spare.length)h+=`<br><span class="cond">Unstaged spares you could send (${spare.length}):</span> ${spare.map(v=>vlabel(v)).join(", ")}`;
+  out.innerHTML=h;
+}
+
+/* ---------- modal & fleet size ---------- */
+const HTYPE={service:"Service",repair:"Repair",inspection:"Inspection",back:"Returned to service",other:"Other"};
+function renderHistory(v){
+  const h=(state.fleet[v].history||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")||b.ts-a.ts);
+  if(!h.length){$("histList").innerHTML='<div class="hist-empty">No maintenance recorded yet for this van.</div>';return;}
+  $("histList").innerHTML=h.map(e=>`<div class="hist-item">
+    <span class="ht ${e.type}">${HTYPE[e.type]||"Other"}</span>
+    <div class="hbody"><div><b>${e.date||"\u2014"}</b>${e.odo?` &middot; <span class="hd">${Number(e.odo).toLocaleString()} km</span>`:""}</div>
+    <div class="hd">${e.details?e.details.replace(/</g,"&lt;"):"<i>no details</i>"}</div></div>
+    <button class="hx" data-ts="${e.ts}" title="Delete record">&times;</button>
+  </div>`).join("");
+  $("histList").querySelectorAll(".hx").forEach(b=>b.onclick=()=>{
+    state.fleet[v].history=state.fleet[v].history.filter(x=>String(x.ts)!==String(b.dataset.ts));
+    saveFleet();renderHistory(v);renderMaint();
+  });
+}
+function openVan(v){const f=state.fleet[v];editVan=v;$("mTitle").textContent="Van "+v;
+  $("mStatus").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.s===f.status));
+  $("mTires").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===(f.tires||"off")));
+  $("mLast").value=f.last||"";$("mNext").value=f.next||"";$("mOdo").value=f.odo||"";$("mNotes").value=f.notes||"";
+  // prefill the log to make "set repair + info -> add record" one tap
+  const today=new Date().toISOString().slice(0,10);
+  $("logType").value=(f.status==="repair")?"repair":(f.status==="service")?"service":"service";
+  $("logDate").value=today;$("logOdo").value=f.odo||"";$("logDetails").value="";
+  renderHistory(v);
+  $("modalBg").classList.add("on");
+}
+function closeVan(){$("modalBg").classList.remove("on");editVan=null;}
+function applyFleetCount(){
+  let n=parseInt($("fleetCountInput").value,10);if(isNaN(n)||n<1)n=1;if(n>300)n=300;
+  if(n>state.fleetCount){for(let i=state.fleetCount+1;i<=n;i++)state.fleet[i]={status:"available",last:"",next:"",odo:"",notes:"",history:[]};}
+  state.fleetCount=n;saveCount();saveFleet();renderAll();flash("Fleet set to "+n+" vans");
+}
+
+/* ---------- tabs ---------- */
+function showView(v){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  document.querySelectorAll(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));
+  renderAll();
+}
+function renderAll(){
+  const sim=simulate(curDow);
+  renderStats(sim);renderSched(sim);renderFleet(sim);renderMaint();renderMoves();
+  if($("v-locs").classList.contains("on"))renderLocs(sim);else refreshLocSilently(sim);
+  if($("v-home").classList.contains("on"))refreshHome();
+  if($("v-pos").classList.contains("on"))renderPos();else if(posInited)refreshPos();
+}
+function refreshLocSilently(sim){/* keep loc grid ready without resetting slider when hidden */ if(locInited)refreshLoc(sim);}
+
+function init(){
+  curDow=realDow();
+  renderDaysel();renderDispatch();renderAll();
+  setInterval(()=>{if($("v-home")&&$("v-home").classList.contains("on"))refreshHome();if($("v-pos")&&$("v-pos").classList.contains("on")){if(posFollow)$("posTime").value=nowMin();refreshPos();}},30000);
+  $("daysel").onclick=e=>{const b=e.target.closest("button");if(!b)return;curDow=Number(b.dataset.d);renderDaysel();renderAll();renderLocs(simulate(curDow));};
+  $("tabs").onclick=e=>{const b=e.target.closest("button");if(b)showView(b.dataset.v);};
+  $("poolBtn").onclick=doPool;$("spBtn").onclick=doSpare;
+  document.querySelector("#schedTbl thead").onclick=e=>{const th=e.target.closest("th.sortable");if(!th)return;
+    const k=th.dataset.sort;if(schedSort.key===k)schedSort.dir*=-1;else schedSort={key:k,dir:1};renderSched(simulate(curDow));};
+  $("vanFilter").onchange=e=>{vanFilter=e.target.value;renderSched(simulate(curDow));};
+  $("logAdd").onclick=()=>{
+    const v=editVan;if(v==null)return;
+    const e={ts:Date.now(),type:$("logType").value,date:$("logDate").value||new Date().toISOString().slice(0,10),
+      odo:$("logOdo").value,details:$("logDetails").value.trim()};
+    state.fleet[v].history=state.fleet[v].history||[];state.fleet[v].history.push(e);
+    if(e.type==="service"||e.type==="inspection")state.fleet[v].last=e.date;
+    if(e.odo)state.fleet[v].odo=e.odo;
+    saveFleet();$("logDetails").value="";renderHistory(v);renderMaint();flash("Record added to Van "+v);
+  };
+  $("locTime").oninput=()=>refreshLoc(simulate(curDow));
+  $("posTime").oninput=()=>{posFollow=false;refreshPos();};
+  $("posNow").onclick=()=>{posFollow=true;$("posTime").value=nowMin();refreshPos();};
+  $("exToggle").onclick=()=>{const f=$("exForm");const show=f.style.display==="none";f.style.display=show?"block":"none";if(show){fillExtraLocs();$("exDay").textContent=DAYNAME(curDow);$("exLocRow").style.display=$("exType").value==="route"?"flex":"none";}};
+  $("exType").onchange=()=>{$("exLocRow").style.display=$("exType").value==="route"?"flex":"none";};
+  $("exCancel").onclick=()=>{$("exForm").style.display="none";$("exErr").textContent="";};
+  $("exAdd").onclick=addExtra;
+  $("vmCancel").onclick=closeVm;$("vmodalBg").onclick=e=>{if(e.target===$("vmodalBg"))closeVm();};
+  $("vmSave").onclick=vmSave;
+  $("vmNum").onkeydown=e=>{if(e.key==="Enter")vmSave();};
+  $("updBtn").onclick=openUpd;$("updCancel").onclick=closeUpd;
+  const updNumBtn=()=>{$("numToggle").textContent="Van #: "+(state.showNums===false?"off":"on");$("numToggle").classList.toggle("off",state.showNums===false);};
+  updNumBtn();
+  $("numToggle").onclick=()=>{state.showNums=(state.showNums===false);updNumBtn();try{store.set("vandispatch:shownums",JSON.stringify(state.showNums),false);}catch(e){}renderAll();};
+  $("updModalBg").onclick=e=>{if(e.target===$("updModalBg"))closeUpd();};
+  $("updFile").onchange=e=>{const f=e.target.files&&e.target.files[0];if(f)runImport(f);};
+  $("updApply").onclick=applyImport;
+  $("updReset").onclick=()=>resetJobs();
+  $("locReset").onclick=()=>{const nd=locNeeds(curDow);state.staged[curDow]={};Object.keys(nd).forEach(L=>state.staged[curDow][L]=nd[L]);saveStaged();renderAll();flash("Reset to minimum (max reuse)");};
+  $("applyCount").onclick=applyFleetCount;
+  $("fleetCountInput").onkeydown=e=>{if(e.key==="Enter")applyFleetCount();};
+  $("mStatus").onclick=e=>{const b=e.target.closest("button");if(!b)return;$("mStatus").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");};
+  $("mTires").onclick=e=>{const b=e.target.closest("button");if(!b)return;$("mTires").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");};
+  $("mCancel").onclick=closeVan;$("modalBg").onclick=e=>{if(e.target===$("modalBg"))closeVan();};
+  $("mSave").onclick=()=>{const on=$("mStatus").querySelector("button.on"),f=state.fleet[editVan];
+    const to=$("mTires").querySelector("button.on");
+    f.status=on?on.dataset.s:"available";f.tires=to?to.dataset.t:"off";f.last=$("mLast").value;f.next=$("mNext").value;f.odo=$("mOdo").value;f.notes=$("mNotes").value;
+    saveFleet();closeVan();renderAll();flash("Van "+editVan+" saved");};
+}
+(async()=>{await load();init();})();
+</script>
+
+</body>
+</html>
